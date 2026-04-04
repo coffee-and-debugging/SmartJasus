@@ -1,0 +1,89 @@
+body {
+    width: 300px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+#emailContent {
+    background: #f1f1f1;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+button {
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+#status {
+    margin-top: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1f2937;
+}
+
+#resultList {
+    margin-top: 10px;
+    text-align: left;
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.result-item {
+    border: 1px solid #dbe2ea;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #f8fafc;
+}
+
+.result-subject {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.result-meta {
+    font-size: 11px;
+    color: #4b5563;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-right: 6px;
+    margin-bottom: 4px;
+}
+
+.badge.phishing {
+    background: #dc2626;
+}
+
+.badge.legitimate {
+    background: #16a34a;
+}
