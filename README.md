@@ -1,236 +1,482 @@
 # SmartJasus
 
-SmartJasus is a Flask-based phishing detection platform that combines:
+SmartJasus is an end-to-end phishing detection system that combines machine learning, email ingestion, and security dashboards in one Flask application.
 
-- an ML classifier for email risk scoring
-- a local SMTP ingestion service for end-to-end testing
-- optional IMAP inbox synchronization from a real mailbox
-- PostgreSQL-backed activity storage
-- web dashboards and a browser extension integration path
+It is designed for three common usage modes:
 
-The application can be used in fully local mode, internet-connected mode, or mixed mode.
+1. Offline/local analysis mode (manual checks + local SMTP flow)
+2. Internet-connected mailbox mode (IMAP sync + external SMTP send)
+3. Mixed SOC mode (both local SMTP and real mailbox monitoring)
 
-## What The Project Does
+## 1. Project Purpose
 
-SmartJasus analyzes email-like input and classifies it as either phishing or legitimate.
+SmartJasus classifies email content as either phishing or legitimate and tracks scanned records in PostgreSQL for monitoring and investigation.
 
-It supports these operational flows:
+Core outcomes:
 
-1. Manual check flow:
-   You provide subject/body and metadata in UI or API, and the model returns a prediction with probability and confidence.
-2. Local SMTP flow:
-   App starts a local SMTP server, receives messages, scans them, and stores results in PostgreSQL.
-3. IMAP sync flow:
-   App can pull emails from your configured mailbox (for example Gmail IMAP), scan them, and store them.
-4. External SMTP send flow:
-   App can send an email using configured SMTP credentials.
+1. Detect suspicious email patterns with a trained gradient boosting model.
+2. Capture and persist email activity from multiple ingestion channels.
+3. Provide operator-facing dashboards with live feed, alerts, and trends.
 
-## Current Architecture
+## 2. System Architecture
 
-### High-level components
+### 2.1 Components
 
-- Backend API: Flask app in app.py
-- ML model and training: train.py and models/phishing_detection_model.pkl
-- Local SMTP + storage logic: local_mail_server.py
-- Database: PostgreSQL (table emails)
-- Frontend templates:
-  - templates/index.html: main SOC dashboard and analytics
-  - templates/mail_dashboard.html: mailbox inspector + manual check page
-- Browser extension (optional): Extension/
+1. API and orchestration layer
+   File: app.py
+   Responsibilities:
+   - load environment and startup services
+   - expose prediction and mail APIs
+   - run IMAP sync and SMTP send endpoints
+   - serve dashboards
 
-### Runtime architecture
+2. ML training pipeline
+   File: train.py
+   Responsibilities:
+   - read dataset.csv
+   - engineer features
+   - train scikit-learn pipeline
+   - persist model artifact at models/phishing_detection_model.pkl
 
-1. Process starts from app.py.
-2. .env is loaded for mail, app, and DB configuration.
-3. PostgreSQL store is initialized and schema ensured (create DB/table/indexes if missing).
-4. ML model is loaded from models/phishing_detection_model.pkl.
-5. Local SMTP server is started on LOCAL_SMTP_HOST:LOCAL_SMTP_PORT.
-6. Flask serves dashboards and APIs on APP_HOST:APP_PORT.
-7. Frontend periodically fetches activity/status and renders analytics.
+3. Local SMTP + persistence layer
+   File: local_mail_server.py
+   Responsibilities:
+   - run local SMTP server via aiosmtpd
+   - parse incoming messages
+   - call ML prediction callback
+   - write normalized results to PostgreSQL
 
-## Machine Learning Component
+4. UI layer
+   Files:
+   - templates/index.html
+   - templates/mail_dashboard.html
+   Responsibilities:
+   - monitoring and activity visualization
+   - manual phishing check
+   - local server status and feed exploration
 
-### Model type
+5. Browser extension (optional integration)
+   Directory: Extension/
 
-- Random Forest classifier persisted as models/phishing_detection_model.pkl
+### 2.2 Data stores and artifacts
 
-### Auto-model behavior
+1. PostgreSQL database
+   - table: emails
+   - stores metadata, body, prediction scores, source identifiers
 
-- On startup, if model file is missing, app imports train_and_save_model from train.py and trains/saves automatically.
+2. Model artifact
+   - models/phishing_detection_model.pkl
 
-### Inference function
+3. Training data
+   - dataset.csv (primary training source in current code)
 
-- Core scoring path is predict_from_payload in app.py.
-- Response returns:
-  - prediction: phishing or legitimate
-  - probability: phishing-class probability
-  - confidence: max class probability
-  - features_used: engineered, model-facing features
+## 3. End-to-End Workflow
 
-### Feature engineering details
+### 3.1 Startup workflow
 
-Features come from extract_features_from_email and extract_domain_features in app.py.
-Current extracted features include:
+When python app.py starts:
 
-- email_text
-- subject
-- has_attachment
-- links_count
-- sender_domain
-- urgent_keywords
-- email_length
-- subject_length
-- link_density
-- domain_age (kept for model compatibility)
-- special_chars
-- html_tags
-- domain_length
-- subdomain_count
-- hyphen_count
-- digit_count
+1. .env values are loaded.
+2. MailStore initializes PostgreSQL (create DB/table/indexes if needed).
+3. Model loading runs:
+   - if model file exists, load it
+   - if missing, trigger train_and_save_model() from train.py, then load
+4. Local SMTP service starts at LOCAL_SMTP_HOST:LOCAL_SMTP_PORT.
+5. Flask server starts at APP_HOST:APP_PORT.
+6. Optional IMAP auto-sync runs if AUTO_SYNC_ON_START=true.
 
-Heuristics include:
+### 3.2 Ingestion workflows
 
-- URL detection via regex when links_count is not supplied
-- urgent phrase detection from a fixed phrase list
-- sender domain extraction from address or URL patterns
+SmartJasus ingests mail-like content through four paths:
 
-## Mail Server Component
+1. Manual prediction
+   - UI or API POST to /predict
+   - extract features -> model -> JSON result
 
-### Local SMTP server
+2. Local SMTP ingest
+   - mail arrives at local SMTP server
+   - LocalMailHandler parses message
+   - prediction callback runs
+   - record is stored in PostgreSQL
 
-- Implemented with aiosmtpd Controller in local_mail_server.py
-- Started from start_local_smtp_server in app.py
-- Default bind: 127.0.0.1:1025 (configurable)
-- Incoming DATA is parsed, scanned by ML, and stored in emails table
+3. IMAP sync ingest
+   - /api/sync-inbox reads configured mailbox via IMAP
+   - parsed messages are scored
+   - new records stored with source_uid and source_mailbox
 
-Important:
+4. External SMTP send
+   - /api/send-email sends outbound email using provider credentials
+   - useful for integration testing and external message delivery
 
-- This local SMTP server does not require internet connection.
-- If UI shows offline, it means local port binding/probe issue, not internet connectivity requirement.
+### 3.3 Monitoring workflow
 
-### IMAP sync (optional internet-dependent)
+1. Dashboards periodically request /api/activity and status endpoints.
+2. Stats and threat cards are rendered client-side.
+3. Operators inspect message details and prediction confidence.
 
-- sync_inbox in app.py connects to IMAP_HOST:IMAP_PORT
-- Auth uses EMAIL_ADDRESS and EMAIL_APP_PASSWORD from .env
-- Pulls messages from IMAP_FOLDER, parses and stores scanned records
+## 4. Machine Learning: Detailed Internals
 
-### External SMTP send (optional internet-dependent)
+This section describes exactly how ML works in the current code.
 
-- Endpoint /api/send-email uses SMTP_HOST/SMTP_PORT credentials
-- Supports STARTTLS based on SMTP_USE_TLS
+## 4.1 Training data contract
 
-## Database Component
+train.py expects dataset.csv with at least these columns:
 
-### Engine
+1. email_text
+2. subject
+3. has_attachment
+4. links_count
+5. sender_domain
+6. urgent_keywords
+7. label (string class: phishing or legitimate)
 
-- PostgreSQL via psycopg2-binary
+Label conversion:
 
-### Initialization behavior
+- phishing -> 1
+- legitimate -> 0
 
-- MailStore in local_mail_server.py auto-initializes DB on app startup.
-- It attempts to:
-  - create database if missing
-  - create emails table if missing
-  - create indexes if missing
+## 4.2 Feature engineering during training
 
-No manual migration script is required for normal setup.
+Function: extract_additional_features(df) in train.py
 
-### emails table columns
+Generated engineered features:
 
-- id SERIAL PRIMARY KEY
-- received_at TEXT
-- sender TEXT
-- recipient TEXT
-- subject TEXT
-- body TEXT
-- has_attachment INTEGER
-- links_count INTEGER
-- sender_domain TEXT
-- source_uid TEXT UNIQUE
-- source_mailbox TEXT
-- prediction TEXT
-- probability REAL
-- confidence REAL
-- created_at TIMESTAMP
+1. email_length
+   len(email_text)
 
-## API Reference
+2. subject_length
+   len(subject)
 
-### UI pages
+3. link_density
+   links_count / (email_length + 1)
 
-- GET /
-- GET /mail-dashboard
-- GET /web-icon.png
+4. domain_age
+   placeholder proxy: hash(sender_domain) % 30
+   Note: this is not WHOIS age; it is a deterministic placeholder feature.
 
-### Prediction APIs
+5. special_chars
+   count of punctuation/special symbols in email_text
 
-- POST /predict
-- POST /detect (compat alias)
+6. html_tags
+   count of <...> style tags in lowercase email_text
 
-### Mail and sync APIs
+## 4.3 Preprocessing pipeline design
 
-- POST /api/send-local
-- POST /api/send-email
-- POST or GET /api/sync-inbox
-- GET /api/mail-config
-- GET /api/local-server-status
-- GET /api/mailbox/<recipient>
-- GET /api/alerts
-- GET /api/activity
-- POST /api/persist-records
+The model uses a scikit-learn Pipeline with a ColumnTransformer.
 
-## Frontend Behavior Notes
+Text channels:
 
-- Main dashboard (index.html):
-  - auto-loads activity
-  - renders SOC stats and threat feed
-  - supports persistent card expansion until outside click
-- Mail dashboard (mail_dashboard.html):
-  - currently configured for manual checking workflow
-  - from/to fields editable
-  - check button posts to /predict
-  - inbox card expansion persists across refresh until outside click
+1. email_text -> HashingVectorizer
+   - n_features = 2^16
+   - alternate_sign = False
+   - stop_words = english
+   - ngram_range = (1, 2)
 
-## Repository Structure
+2. subject -> HashingVectorizer (same config)
 
-- app.py: Flask app, APIs, model inference, IMAP sync, SMTP send
-- local_mail_server.py: PostgreSQL store + local SMTP handler
-- train.py: model training routine
-- requirements.txt: Python dependencies
-- templates/: web UI pages
-- Extension/: browser extension source
-- models/: saved model artifacts
-- datasets/ and dataset.csv: training/evaluation datasets
-- DATABASE_SETUP.md: PostgreSQL setup and verification guide
+Categorical channel:
 
-## Setup Guide
+3. sender_domain -> HashingVectorizer
+   - n_features = 100
+   - alternate_sign = False
 
-### 1) Prerequisites
+Numeric channel:
 
-- Python 3.9+
-- PostgreSQL 13+ (or compatible)
-- pip and virtualenv
+4. numeric features -> StandardScaler
+   - has_attachment
+   - links_count
+   - urgent_keywords
+   - email_length
+   - subject_length
+   - link_density
+   - domain_age
+   - special_chars
+   - html_tags
 
-### 2) Create virtual environment
+Combined representation:
 
-On Linux or macOS:
+- ColumnTransformer concatenates all transformed channels into one feature space.
+
+## 4.4 Classifier internals
+
+Current classifier: GradientBoostingClassifier
+
+Hyperparameters in train.py:
+
+1. n_estimators = 150
+2. learning_rate = 0.1
+3. max_depth = 5
+4. random_state = 42
+5. subsample = 0.8
+6. max_features = sqrt
+
+Conceptually, gradient boosting builds trees sequentially to minimize classification loss by fitting each new learner to residual errors of the ensemble.
+
+If f_m(x) is the ensemble after m stages:
+
+f_m(x) = f_{m-1}(x) + eta * h_m(x)
+
+where:
+
+- eta is learning_rate
+- h_m(x) is the new tree fitted to gradient/residual signal
+
+## 4.5 Train/validation flow
+
+1. Split: train_test_split with
+   - test_size = 0.2
+   - random_state = 42
+   - stratify = y
+
+2. Fit pipeline on train split.
+3. Evaluate on test split using:
+   - accuracy_score
+   - f1_score
+   - classification_report
+4. Save model with joblib.dump(..., compress=3).
+
+## 4.6 Inference internals in app.py
+
+Primary function: predict_from_payload(data)
+
+Pipeline:
+
+1. extract_features_from_email(...) fills missing metadata and computes engineered fields.
+2. Build single-row pandas DataFrame.
+3. Call model.predict and model.predict_proba.
+4. Return:
+   - prediction: phishing/legitimate
+   - probability: probability of phishing class
+   - confidence: max(probabilities)
+   - features_used: non-text engineered metadata
+
+## 4.7 Runtime feature extraction behavior
+
+extract_features_from_email in app.py has smart fallbacks:
+
+1. links_count
+   - if missing, regex-extract URLs from email_text
+
+2. sender_domain
+   - if missing, infer from email address or URL-like patterns
+
+3. urgent_keywords
+   - if missing, detect phrase hits from a predefined urgency phrase list
+
+4. email_length/subject_length/link_density/special_chars/html_tags
+   - computed every request
+
+Domain helpers:
+
+- extract_domain_features(domain) uses tldextract and adds:
+  - domain_length
+  - subdomain_count
+  - hyphen_count
+  - digit_count
+
+Note:
+
+- The saved model was trained with the features defined in train.py.
+- app.py also computes some additional domain-derived fields for diagnostics and compatibility.
+
+## 4.8 Prediction semantics
+
+Returned values mean:
+
+1. prediction
+   - final class label from estimator
+
+2. probability
+   - model-estimated phishing likelihood
+
+3. confidence
+   - max class probability (model certainty for chosen class)
+
+Interpretation guideline:
+
+- high probability + phishing -> high-risk candidate
+- high confidence + legitimate -> likely benign
+- borderline probabilities should be reviewed with context and sender validation
+
+## 4.9 ML limitations and caveats
+
+1. domain_age is currently a placeholder hash feature, not real registration age.
+2. HashingVectorizer is non-invertible; token-level interpretability is limited.
+3. Model quality depends on dataset representativeness and label quality.
+4. Concept drift is expected in phishing campaigns; periodic retraining is required.
+
+## 4.10 Recommended ML improvement roadmap
+
+1. Replace placeholder domain_age with real WHOIS/domain intelligence feature.
+2. Add calibration (Platt/Isotonic) for better probability reliability.
+3. Add precision/recall and confusion matrix reporting in training logs.
+4. Version model artifacts with timestamp and dataset hash metadata.
+5. Add drift monitoring and scheduled retraining workflow.
+
+## 5. Mail Server and Messaging Internals
+
+### 5.1 Local SMTP server
+
+Implementation:
+
+- LocalSMTPServer wraps aiosmtpd Controller
+- LocalMailHandler.handle_DATA parses RFC822 content
+
+Flow:
+
+1. Parse From/Subject/body
+2. Detect attachment presence
+3. Infer sender domain
+4. Parse Date header for received_at fallback
+5. Predict phishing probability
+6. Save one record per recipient in envelope.rcpt_tos
+
+### 5.2 External SMTP endpoint
+
+Endpoint: /api/send-email
+
+Behavior:
+
+1. Validate EMAIL_ADDRESS and EMAIL_APP_PASSWORD
+2. Build EmailMessage
+3. Connect SMTP_HOST:SMTP_PORT
+4. EHLO
+5. STARTTLS if SMTP_USE_TLS=true
+6. EHLO again
+7. Login and send
+
+### 5.3 IMAP sync internals
+
+Function: sync_inbox(limit=20)
+
+1. Connect IMAP4_SSL(IMAP_HOST, IMAP_PORT)
+2. Login with EMAIL_ADDRESS and EMAIL_APP_PASSWORD
+3. Select IMAP_FOLDER readonly
+4. Search UID ALL, fetch latest limit UIDs
+5. Fetch RFC822 + INTERNALDATE
+6. Parse each message and score
+7. Store with source_uid=imap:<uid>
+
+## 6. Database Layer Internals
+
+Database bootstrap is automatic in MailStore._init_db:
+
+1. _create_database()
+2. _create_tables()
+
+### 6.1 Schema
+
+Table: emails
+
+1. id SERIAL PRIMARY KEY
+2. received_at TEXT NOT NULL
+3. sender TEXT NOT NULL
+4. recipient TEXT NOT NULL
+5. subject TEXT
+6. body TEXT
+7. has_attachment INTEGER NOT NULL DEFAULT 0
+8. links_count INTEGER NOT NULL DEFAULT 0
+9. sender_domain TEXT
+10. source_uid TEXT UNIQUE
+11. source_mailbox TEXT
+12. prediction TEXT NOT NULL
+13. probability REAL NOT NULL
+14. confidence REAL NOT NULL
+15. created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+### 6.2 Indexes
+
+1. idx_emails_recipient(recipient, received_at desc)
+2. idx_emails_source_uid(source_uid) where source_uid is not null
+3. idx_emails_prediction(prediction, received_at desc)
+4. idx_emails_received_at(received_at desc)
+
+### 6.3 Dedup behavior
+
+save_email handles source_uid unique collisions:
+
+1. catches IntegrityError
+2. updates received_at for existing source_uid
+3. avoids duplicate row insertion for same source_uid
+
+## 7. API Reference
+
+### 7.1 UI routes
+
+1. GET /
+2. GET /mail-dashboard
+3. GET /web-icon.png
+
+### 7.2 Prediction routes
+
+1. POST /predict
+2. OPTIONS /predict
+3. POST /detect (compat alias)
+
+### 7.3 Mail and data routes
+
+1. POST /api/send-local
+2. POST /api/send-email
+3. POST or GET /api/sync-inbox
+4. GET /api/mail-config
+5. GET /api/local-server-status
+6. GET /api/mailbox/<recipient>
+7. GET /api/alerts
+8. GET /api/activity
+9. POST /api/persist-records
+
+## 8. Repository Structure
+
+1. app.py
+   Flask app, endpoint layer, inference orchestrator, IMAP sync
+
+2. train.py
+   ML training pipeline, evaluation, artifact export
+
+3. local_mail_server.py
+   PostgreSQL store, schema bootstrap, SMTP ingest logic
+
+4. templates/
+   UI pages for SOC dashboard and manual check console
+
+5. Extension/
+   Optional Chrome extension files
+
+6. models/
+   Trained model artifact(s)
+
+7. dataset.csv
+   Current training dataset source in code
+
+8. DATABASE_SETUP.md
+   Detailed PostgreSQL setup and verification
+
+## 9. Setup and Run
+
+### 9.1 Prerequisites
+
+1. Python 3.9+
+2. PostgreSQL 13+
+3. pip and virtual environment support
+
+### 9.2 Environment setup
+
+Linux/macOS:
 
 python3 -m venv .venv
 source .venv/bin/activate
 
-On Windows (PowerShell):
+Windows PowerShell:
 
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 
-### 3) Install dependencies
+Install dependencies:
 
 pip install --upgrade pip
 pip install -r requirements.txt
 
-### 4) Configure .env
-
-Create .env in project root and set at minimum:
+### 9.3 .env example
 
 EMAIL_ADDRESS=your_email@example.com
 EMAIL_APP_PASSWORD=your_app_password
@@ -259,70 +505,78 @@ AUTO_SYNC_ON_START=false
 
 Notes:
 
-- EMAIL_APP_PASSWORD can contain spaces in .env; app normalizes and strips them before login.
-- Set AUTO_SYNC_ON_START=true only when internet and mailbox access are expected at startup.
+1. EMAIL_APP_PASSWORD is normalized by stripping spaces before auth.
+2. AUTO_SYNC_ON_START=true enables startup mailbox sync.
 
-### 5) Start the application
+### 9.4 Run
 
 python app.py
 
-Expected startup logs include web server and local SMTP bind target.
+Open:
 
-### 6) Open dashboards
+1. http://127.0.0.1:5000/
+2. http://127.0.0.1:5000/mail-dashboard
 
-- Main dashboard: http://127.0.0.1:5000/
-- Mail dashboard: http://127.0.0.1:5000/mail-dashboard
+## 10. Verification Checklist
 
-## Verification Checklist
-
-1. Local API health check:
+1. Verify local SMTP status:
 
 curl http://127.0.0.1:5000/api/local-server-status
 
-Expect local_server_up true.
+Expected: local_server_up should be true.
 
-2. Manual model check:
+2. Verify prediction endpoint:
 
 curl -X POST http://127.0.0.1:5000/predict -H "Content-Type: application/json" -d '{"email_text":"Please verify your account now","subject":"Urgent security alert"}'
 
-3. DB activity check:
+3. Verify activity retrieval:
 
 curl "http://127.0.0.1:5000/api/activity?limit=5"
 
-## Troubleshooting
+4. Optional: trigger IMAP sync:
 
-### Local server shows offline
+curl -X POST "http://127.0.0.1:5000/api/sync-inbox?limit=5"
 
-- Confirm app.py is currently running.
-- Check if another process already uses LOCAL_SMTP_PORT.
-- Verify probe endpoint directly:
-  curl http://127.0.0.1:5000/api/local-server-status
+## 11. Troubleshooting
 
-If local_server_up is false while app is running, port binding likely failed or another SMTP process owns the port.
+### 11.1 Local SMTP shows offline
 
-### IMAP sync fails
+1. Ensure app.py process is running.
+2. Check LOCAL_SMTP_PORT conflicts.
+3. Query /api/local-server-status directly.
+4. If port is occupied by another process, free or change port.
 
-- Verify EMAIL_ADDRESS, EMAIL_APP_PASSWORD, IMAP_HOST, IMAP_PORT.
-- Ensure mailbox/provider allows IMAP and app-password login.
+### 11.2 Model load or training errors
 
-### SMTP send fails
+1. Confirm dataset.csv exists and has required columns.
+2. Check scikit-learn/pandas installation.
+3. Remove stale model artifact and restart to force retrain when needed.
 
-- Verify SMTP_HOST, SMTP_PORT, TLS setting, app password.
-- For Gmail, use App Password and keep 2FA enabled on the account.
+### 11.3 IMAP auth failures
 
-### DB connection errors
+1. Verify EMAIL_ADDRESS and EMAIL_APP_PASSWORD.
+2. Ensure provider allows IMAP and app password usage.
+3. Verify IMAP host/port values.
 
-- Verify DB service is running.
-- Check DB_USER/DB_PASSWORD and host/port.
-- See DATABASE_SETUP.md for detailed DB diagnostics.
+### 11.4 SMTP send failures
 
-## Security Notes
+1. Verify SMTP_HOST, SMTP_PORT, TLS setting.
+2. For Gmail, use App Password with account 2FA enabled.
 
-- Do not commit .env to version control.
-- Use app passwords, not account primary passwords.
-- Restrict CORS and host binding for production deployment.
-- Current setup is optimized for local testing/dev, not hardened production operation.
+### 11.5 PostgreSQL connection issues
 
-## License
+1. Verify DB service is running.
+2. Validate DB credentials in .env.
+3. Check DB user permissions for DB/table creation.
+4. See DATABASE_SETUP.md for full diagnostics.
+
+## 12. Security and Operational Notes
+
+1. Never commit .env with real credentials.
+2. This project is configured for development/local SOC simulation.
+3. Restrict CORS, host binding, and credential handling before production deployment.
+4. Add proper secret management and audit logging for production use.
+
+## 13. License
 
 This project is licensed under the MIT License.
