@@ -1,0 +1,22 @@
+{
+  "description": "Known legitimate/trusted sender domains used for rule-based phishing probability reduction",
+  "version": "1.0",
+  "domains": [
+    "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
+    "microsoft.com", "apple.com", "amazon.com", "google.com", "facebook.com",
+    "linkedin.com", "twitter.com", "github.com", "stackoverflow.com",
+    "office365.com", "office.com", "onedrive.com", "icloud.com",
+    "protonmail.com", "zoho.com", "company.com", "colleague.com",
+    "client.com", "partner.com", "local.com",
+    "dropbox.com", "slack.com", "zoom.us", "adobe.com", "salesforce.com",
+    "netflix.com", "spotify.com", "youtube.com", "instagram.com",
+    "whatsapp.com", "telegram.org", "paypal.com", "stripe.com",
+    "aws.amazon.com", "azure.microsoft.com", "cloud.google.com",
+    "shopify.com", "wordpress.com", "hubspot.com", "mailchimp.com",
+    "sendgrid.com", "twilio.com", "cloudflare.com", "godaddy.com",
+    "namecheap.com", "bluehost.com", "hostgator.com", "siteground.com",
+    "edu.np", "gov.np", "edu", "gov", "ac.uk", "gov.uk",
+    "rediff.com", "aol.com", "mail.com", "ymail.com",
+    "me.com", "mac.com", "googlemail.com"
+  ]
+}

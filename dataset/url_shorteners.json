@@ -1,0 +1,26 @@
+{
+  "description": "Known URL shortening services commonly abused in phishing campaigns to obfuscate malicious links",
+  "version": "1.0",
+  "source": "Compiled from phishing threat intelligence reports and security research",
+  "shorteners": [
+    "bit.ly", "tinyurl.com", "goo.gl", "ow.ly", "t.co",
+    "is.gd", "buff.ly", "shorte.st", "adf.ly", "short.io",
+    "tiny.cc", "cutt.ly", "rb.gy", "shorturl.at", "tinycc.com",
+    "bl.ink", "snip.ly", "clck.ru", "qps.ru", "u.to",
+    "v.gd", "x.co", "cli.gs", "ff.im", "su.pr",
+    "tr.im", "twurl.nl", "ur1.ca", "3.ly", "7.ly",
+    "alturl.com", "b2l.me", "budurl.com", "childandfamily.net",
+    "dfl8.me", "doiop.com", "easyurl.net", "fff.to",
+    "go2l.ink", "golinks.io", "href.li", "i.mtr.cool",
+    "j.mp", "kissa.be", "lnkd.in", "mcaf.ee", "migre.me",
+    "moourl.com", "notlong.com", "ow.me", "ping.fm",
+    "plurl.me", "post.ly", "prettylinkpro.com", "qr.cx",
+    "redir.ec", "retwt.me", "s.id", "scrnch.me",
+    "shrinkify.com", "smarturl.it", "snurl.com", "soo.gd",
+    "sp2.ro", "spedr.com", "starturl.com", "tiny.pl",
+    "to.ly", "togoto.us", "twit.ac", "u.mavrev.com",
+    "ulmt.in", "urlcut.com", "urlex.org", "urlhawk.com",
+    "urlm.in", "urlshortner.in", "whrt.it", "wurl.nu",
+    "xrl.me", "xrl.us", "yfrog.com", "yourls.org", "zi.ma"
+  ]
+}

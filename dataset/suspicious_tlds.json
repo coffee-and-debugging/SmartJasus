@@ -1,0 +1,20 @@
+{
+  "description": "Top-level domains commonly associated with phishing, spam, and malicious activity",
+  "version": "1.0",
+  "source": "Based on SANS Internet Storm Center, SpamHaus, and abuse.ch threat intelligence",
+  "tlds": [
+    ".xyz", ".tk", ".ml", ".ga", ".cf", ".gq",
+    ".top", ".loan", ".online", ".site", ".click",
+    ".link", ".bid", ".win", ".stream", ".review",
+    ".party", ".download", ".racing", ".date",
+    ".faith", ".science", ".trade", ".work",
+    ".info", ".biz", ".buzz", ".mobi", ".name",
+    ".pw", ".cc", ".ws", ".su", ".nu",
+    ".club", ".space", ".website", ".press",
+    ".guru", ".rocks", ".ninja", ".tools",
+    ".accountant", ".cricket", ".men", ".webcam",
+    ".gdn", ".icu", ".rest", ".vip", ".ltd",
+    ".email", ".solutions", ".zone", ".world",
+    ".today", ".live", ".run", ".fun"
+  ]
+}

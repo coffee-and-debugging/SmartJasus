@@ -2,7 +2,9 @@
 
 SmartJasus is an end-to-end phishing detection system that combines machine learning, email ingestion, and security dashboards in one Flask application.
 
-It is designed for three common usage modes:
+It is trained on **real-world email datasets** (CEAS_08, Enron, Ling, Nazario, Nigerian Fraud, SpamAssasin) — over 80,000 authentic emails.
+
+Usage modes:
 
 1. Offline/local analysis mode (manual checks + local SMTP flow)
 2. Internet-connected mailbox mode (IMAP sync + external SMTP send)
@@ -14,7 +16,7 @@ SmartJasus classifies email content as either phishing or legitimate and tracks 
 
 Core outcomes:
 
-1. Detect suspicious email patterns with a trained gradient boosting model.
+1. Detect suspicious email patterns with a model trained on real-world phishing and legitimate email data.
 2. Capture and persist email activity from multiple ingestion channels.
 3. Provide operator-facing dashboards with live feed, alerts, and trends.
 
@@ -33,10 +35,11 @@ Core outcomes:
 2. ML training pipeline
    File: train.py
    Responsibilities:
-   - read dataset.csv
-   - engineer features
-   - train scikit-learn pipeline
-   - persist model artifact at models/phishing_detection_model.pkl
+   - read and merge all 6 dataset CSVs from dataset/
+   - clean and derive required features
+   - engineer additional features
+   - train scikit-learn pipeline across 5 models
+   - persist best model artifact at models/phishing_detection.pkl
 
 3. Local SMTP + persistence layer
    File: local_mail_server.py
@@ -65,10 +68,20 @@ Core outcomes:
    - stores metadata, body, prediction scores, source identifiers
 
 2. Model artifact
-   - models/phishing_detection_model.pkl
+   - models/phishing_detection.pkl
 
-3. Training data
-   - dataset.csv (primary training source in current code)
+3. Real-world training data
+   - dataset/CEAS_08.csv       (39,154 rows — spam/ham benchmark)
+   - dataset/Enron.csv         (29,767 rows — real corporate email)
+   - dataset/Ling.csv          (2,859 rows  — legitimate corpus)
+   - dataset/Nazario.csv       (1,565 rows  — real phishing samples)
+   - dataset/Nigerian_Fraud.csv(3,332 rows  — advance-fee fraud)
+   - dataset/SpamAssasin.csv   (5,809 rows  — SpamAssasin benchmark)
+
+4. Reference data (dataset/)
+   - legitimate_domains.json
+   - suspicious_tlds.json
+   - url_shorteners.json
 
 ## 3. End-to-End Workflow
 
@@ -79,7 +92,7 @@ When python app.py starts:
 1. .env values are loaded.
 2. MailStore initializes PostgreSQL (create DB/table/indexes if needed).
 3. Model loading runs:
-   - if model file exists, load it
+   - if models/phishing_detection.pkl exists, load it
    - if missing, trigger train_and_save_model() from train.py, then load
 4. Local SMTP service starts at LOCAL_SMTP_HOST:LOCAL_SMTP_PORT.
 5. Flask server starts at APP_HOST:APP_PORT.
@@ -106,7 +119,6 @@ SmartJasus ingests mail-like content through four paths:
 
 4. External SMTP send
    - /api/send-email sends outbound email using provider credentials
-   - useful for integration testing and external message delivery
 
 ### 3.3 Monitoring workflow
 
@@ -116,51 +128,59 @@ SmartJasus ingests mail-like content through four paths:
 
 ## 4. Machine Learning: Detailed Internals
 
-This section describes exactly how ML works in the current code.
+### 4.1 Real-world dataset pipeline
 
-## 4.1 Training data contract
+train.py loads and merges 6 real-world CSV files from dataset/:
 
-train.py expects dataset.csv with at least these columns:
+| File              | Rows   | Source                      |
+|-------------------|--------|-----------------------------|
+| CEAS_08.csv       | 39,154 | Spam/ham academic benchmark |
+| Enron.csv         | 29,767 | Real corporate email corpus |
+| Ling.csv          | 2,859  | Legitimate email corpus     |
+| Nazario.csv       | 1,565  | Real phishing samples       |
+| Nigerian_Fraud.csv| 3,332  | Advance-fee fraud emails    |
+| SpamAssasin.csv   | 5,809  | SpamAssasin benchmark       |
 
-1. email_text
-2. subject
-3. has_attachment
-4. links_count
-5. sender_domain
-6. urgent_keywords
-7. label (string class: phishing or legitimate)
+After deduplication: ~75,000+ unique real emails.
 
-Label conversion:
+### 4.2 Feature derivation from raw dataset data
 
-- phishing -> 1
-- legitimate -> 0
+Raw dataset columns: sender, body, subject, label (0/1)
 
-## 4.2 Feature engineering during training
+Derived required inputs:
+
+1. email_text      — body column after HTML stripping and whitespace normalisation
+2. subject         — subject column (cleaned)
+3. sender_domain   — domain extracted from sender email address via regex
+4. has_attachment  — defaulted to 0 (not present in dataset files)
+5. links_count     — count of https?:// URLs in email_text via regex
+6. urgent_keywords — count of 16 urgency keyword hits in subject + body
+7. label           — already 0/1 integer in all files (1=phishing, 0=legitimate)
+
+### 4.3 Feature engineering during training
 
 Function: extract_additional_features(df) in train.py
 
 Generated engineered features:
 
-1. email_length
-   len(email_text)
+1. email_length        — len(email_text)
+2. subject_length      — len(subject)
+3. link_density        — links_count / (email_length + 1)
+4. domain_age          — hash-based proxy: 30 if trusted domain, else 1–8
+5. special_chars       — count of punctuation/special symbols in email_text
+6. html_tags           — count of <...> style tags in lowercase email_text
+7. legitimate_domain   — 1 if sender_domain in legitimate_domains.json
+8. suspicious_tld      — 1 if sender_domain ends with a suspicious TLD
+9. domain_length       — len(sender_domain)
+10. domain_has_digits  — 1 if any digit in sender_domain
+11. domain_has_hyphen  — 1 if hyphen in sender_domain
+12. ip_url_count       — count of IP-address-based URLs
+13. shortener_url_count— count of known URL shortener domains
+14. https_url_count    — count of https:// links
+15. http_url_count     — count of http:// links
+16. http_ratio         — http_url_count / (links_count + 1)
 
-2. subject_length
-   len(subject)
-
-3. link_density
-   links_count / (email_length + 1)
-
-4. domain_age
-   placeholder proxy: hash(sender_domain) % 30
-   Note: this is not WHOIS age; it is a deterministic placeholder feature.
-
-5. special_chars
-   count of punctuation/special symbols in email_text
-
-6. html_tags
-   count of <...> style tags in lowercase email_text
-
-## 4.3 Preprocessing pipeline design
+### 4.4 Preprocessing pipeline design
 
 The model uses a scikit-learn Pipeline with a ColumnTransformer.
 
@@ -177,65 +197,35 @@ Text channels:
 Categorical channel:
 
 3. sender_domain -> HashingVectorizer
-   - n_features = 100
+   - n_features = 512
    - alternate_sign = False
 
 Numeric channel:
 
-4. numeric features -> StandardScaler
-   - has_attachment
-   - links_count
-   - urgent_keywords
-   - email_length
-   - subject_length
-   - link_density
-   - domain_age
-   - special_chars
-   - html_tags
+4. 19 numeric features -> StandardScaler
 
-Combined representation:
+### 4.5 Model catalogue
 
-- ColumnTransformer concatenates all transformed channels into one feature space.
+All 5 models are trained and compared:
 
-## 4.4 Classifier internals
+1. Logistic Regression   — max_iter=1000, C=1.0, class_weight=balanced
+2. Random Forest         — 150 trees, max_depth=12, class_weight=balanced
+3. Extra Trees           — 150 trees, max_depth=12, class_weight=balanced
+4. Gradient Boosting     — 200 estimators, lr=0.08, max_depth=5
+5. XGBoost               — 200 estimators, lr=0.08, max_depth=5 (if installed)
 
-Current classifier: GradientBoostingClassifier
+Best model by F1@0.60 is saved automatically.
 
-Hyperparameters in train.py:
+### 4.6 Train/validation flow
 
-1. n_estimators = 150
-2. learning_rate = 0.1
-3. max_depth = 5
-4. random_state = 42
-5. subsample = 0.8
-6. max_features = sqrt
+1. Split: train_test_split with test_size=0.20, random_state=42, stratify=y
+2. Sample weights: w_legit = (n_phish / n_legit) * 1.4 to balance classes
+3. Fit pipeline on train split.
+4. Evaluate on test split at threshold=0.60:
+   - AUC, Accuracy, Precision, Recall, F1, FP, FN
+5. Save best model with joblib.dump(..., compress=3).
 
-Conceptually, gradient boosting builds trees sequentially to minimize classification loss by fitting each new learner to residual errors of the ensemble.
-
-If f_m(x) is the ensemble after m stages:
-
-f_m(x) = f_{m-1}(x) + eta * h_m(x)
-
-where:
-
-- eta is learning_rate
-- h_m(x) is the new tree fitted to gradient/residual signal
-
-## 4.5 Train/validation flow
-
-1. Split: train_test_split with
-   - test_size = 0.2
-   - random_state = 42
-   - stratify = y
-
-2. Fit pipeline on train split.
-3. Evaluate on test split using:
-   - accuracy_score
-   - f1_score
-   - classification_report
-4. Save model with joblib.dump(..., compress=3).
-
-## 4.6 Inference internals in app.py
+### 4.7 Inference internals in app.py
 
 Primary function: predict_from_payload(data)
 
@@ -243,79 +233,44 @@ Pipeline:
 
 1. extract_features_from_email(...) fills missing metadata and computes engineered fields.
 2. Build single-row pandas DataFrame.
-3. Call model.predict and model.predict_proba.
-4. Return:
-   - prediction: phishing/legitimate
-   - probability: probability of phishing class
-   - confidence: max(probabilities)
-   - features_used: non-text engineered metadata
+3. Call model.predict_proba.
+4. Apply rule adjustments (trusted domain, IP URLs, suspicious TLD, shorteners).
+5. Return prediction, probability, confidence, features_used, url_analysis.
 
-## 4.7 Runtime feature extraction behavior
+### 4.8 Prediction semantics
 
-extract_features_from_email in app.py has smart fallbacks:
+- prediction   — phishing or legitimate
+- probability  — model-estimated phishing likelihood (after rule adjustments)
+- confidence   — certainty for chosen class
+- threshold    — 0.60 (configurable via PHISHING_THRESHOLD in .env)
 
-1. links_count
-   - if missing, regex-extract URLs from email_text
+### 4.9 ML limitations and caveats
 
-2. sender_domain
-   - if missing, infer from email address or URL-like patterns
+1. domain_age is a hash-based placeholder, not real WHOIS registration age.
+2. has_attachment is always 0 in training data (not present in dataset files).
+3. HashingVectorizer is non-invertible; token-level interpretability is limited.
+4. Concept drift is expected in phishing campaigns; periodic retraining recommended.
 
-3. urgent_keywords
-   - if missing, detect phrase hits from a predefined urgency phrase list
+## 5. Retraining
 
-4. email_length/subject_length/link_density/special_chars/html_tags
-   - computed every request
+To retrain the model locally (e.g. after sklearn upgrade or adding new data):
 
-Domain helpers:
+python train.py
 
-- extract_domain_features(domain) uses tldextract and adds:
-  - domain_length
-  - subdomain_count
-  - hyphen_count
-  - digit_count
+This will:
+1. Load and merge all 6 CSVs from dataset/
+2. Train all models
+3. Save the best to models/phishing_detection.pkl
 
-Note:
+To retrain on Google Colab (recommended for slow machines):
+- Upload dataset/ folder to Google Drive
+- Open SmartJasus_RealWorld_Colab.ipynb in Colab
+- Set DATASET_PATH and run all cells
+- Download the generated .pkl and place in models/
 
-- The saved model was trained with the features defined in train.py.
-- app.py also computes some additional domain-derived fields for diagnostics and compatibility.
+## 6. Mail Server and Messaging Internals
 
-## 4.8 Prediction semantics
-
-Returned values mean:
-
-1. prediction
-   - final class label from estimator
-
-2. probability
-   - model-estimated phishing likelihood
-
-3. confidence
-   - max class probability (model certainty for chosen class)
-
-Interpretation guideline:
-
-- high probability + phishing -> high-risk candidate
-- high confidence + legitimate -> likely benign
-- borderline probabilities should be reviewed with context and sender validation
-
-## 4.9 ML limitations and caveats
-
-1. domain_age is currently a placeholder hash feature, not real registration age.
-2. HashingVectorizer is non-invertible; token-level interpretability is limited.
-3. Model quality depends on dataset representativeness and label quality.
-4. Concept drift is expected in phishing campaigns; periodic retraining is required.
-
-## 4.10 Recommended ML improvement roadmap
-
-1. Replace placeholder domain_age with real WHOIS/domain intelligence feature.
-2. Add calibration (Platt/Isotonic) for better probability reliability.
-3. Add precision/recall and confusion matrix reporting in training logs.
-4. Version model artifacts with timestamp and dataset hash metadata.
-5. Add drift monitoring and scheduled retraining workflow.
-
-## 5. Mail Server and Messaging Internals
-
-### 5.1 Local SMTP server
+### 6.1 Local SMTP server
 
 Implementation:
 
@@ -331,7 +286,7 @@ Flow:
 5. Predict phishing probability
 6. Save one record per recipient in envelope.rcpt_tos
 
-### 5.2 External SMTP endpoint
+### 6.2 External SMTP endpoint
 
 Endpoint: /api/send-email
 
@@ -339,13 +294,10 @@ Behavior:
 
 1. Validate EMAIL_ADDRESS and EMAIL_APP_PASSWORD
 2. Build EmailMessage
-3. Connect SMTP_HOST:SMTP_PORT
-4. EHLO
-5. STARTTLS if SMTP_USE_TLS=true
-6. EHLO again
-7. Login and send
+3. Connect SMTP_HOST:SMTP_PORT with STARTTLS
+4. Login and send
 
-### 5.3 IMAP sync internals
+### 6.3 IMAP sync internals
 
 Function: sync_inbox(limit=20)
 
@@ -357,14 +309,11 @@ Function: sync_inbox(limit=20)
 6. Parse each message and score
 7. Store with source_uid=imap:<uid>
 
-## 6. Database Layer Internals
+## 7. Database Layer Internals
 
-Database bootstrap is automatic in MailStore._init_db:
+Database bootstrap is automatic in MailStore._init_db.
 
-1. _create_database()
-2. _create_tables()
-
-### 6.1 Schema
+### 7.1 Schema
 
 Table: emails
 
@@ -384,36 +333,28 @@ Table: emails
 14. confidence REAL NOT NULL
 15. created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
-### 6.2 Indexes
+### 7.2 Indexes
 
 1. idx_emails_recipient(recipient, received_at desc)
 2. idx_emails_source_uid(source_uid) where source_uid is not null
 3. idx_emails_prediction(prediction, received_at desc)
 4. idx_emails_received_at(received_at desc)
 
-### 6.3 Dedup behavior
+## 8. API Reference
 
-save_email handles source_uid unique collisions:
-
-1. catches IntegrityError
-2. updates received_at for existing source_uid
-3. avoids duplicate row insertion for same source_uid
-
-## 7. API Reference
-
-### 7.1 UI routes
+### 8.1 UI routes
 
 1. GET /
 2. GET /mail-dashboard
 3. GET /web-icon.png
 
-### 7.2 Prediction routes
+### 8.2 Prediction routes
 
 1. POST /predict
 2. OPTIONS /predict
 3. POST /detect (compat alias)
 
-### 7.3 Mail and data routes
+### 8.3 Mail and data routes
 
 1. POST /api/send-local
 2. POST /api/send-email
@@ -423,61 +364,80 @@ save_email handles source_uid unique collisions:
 6. GET /api/mailbox/<recipient>
 7. GET /api/alerts
 8. GET /api/activity
-9. POST /api/persist-records
+9. GET /api/logs
+10. GET /api/stats
+11. GET /api/model-info
+12. POST /api/domain-reputation
+13. POST /api/persist-records
+14. POST /api/users/add
+15. GET /api/users
 
-## 8. Repository Structure
+## 9. Repository Structure
 
-1. app.py
-   Flask app, endpoint layer, inference orchestrator, IMAP sync
+```
+dataset/
+  CEAS_08.csv                   Real-world spam/ham benchmark
+  Enron.csv                     Real corporate email corpus
+  Ling.csv                      Legitimate email corpus
+  Nazario.csv                   Real phishing samples
+  Nigerian_Fraud.csv            Advance-fee fraud emails
+  SpamAssasin.csv               SpamAssasin benchmark
+  legitimate_domains.json       Trusted domain list
+  suspicious_tlds.json          High-risk TLD list
+  url_shorteners.json           Known URL shortener domains
 
-2. train.py
-   ML training pipeline, evaluation, artifact export
+models/
+  phishing_detection.pkl   Trained model artifact
 
-3. local_mail_server.py
-   PostgreSQL store, schema bootstrap, SMTP ingest logic
+templates/
+  index.html                    SOC monitoring dashboard
+  mail_dashboard.html           Mail compose and inbox UI
 
-4. templates/
-   UI pages for SOC dashboard and manual check console
+Extension/
+  manifest.json                 Chrome extension manifest
+  popup.html / popup.js         Extension popup
+  content.js / background.js    Extension scripts
 
-5. Extension/
-   Optional Chrome extension files
+app.py                          Flask app, endpoints, inference, IMAP sync
+train.py                        ML training pipeline on real-world data
+local_mail_server.py            PostgreSQL store, SMTP ingest logic
+SmartJasus_RealWorld_Colab.ipynb  Colab training notebook
+requirements.txt                Python dependencies
+DATABASE_SETUP.md               PostgreSQL setup guide
+.env                            Environment config (not committed)
+```
 
-6. models/
-   Trained model artifact(s)
+## 10. Setup and Run
 
-7. dataset.csv
-   Current training dataset source in code
-
-8. DATABASE_SETUP.md
-   Detailed PostgreSQL setup and verification
-
-## 9. Setup and Run
-
-### 9.1 Prerequisites
+### 10.1 Prerequisites
 
 1. Python 3.9+
 2. PostgreSQL 13+
 3. pip and virtual environment support
 
-### 9.2 Environment setup
+### 10.2 Environment setup
 
 Linux/macOS:
 
+```
 python3 -m venv .venv
 source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
 Windows PowerShell:
 
+```
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-
-Install dependencies:
-
 pip install --upgrade pip
 pip install -r requirements.txt
+```
 
-### 9.3 .env example
+### 10.3 .env example
 
+```
 EMAIL_ADDRESS=your_email@example.com
 EMAIL_APP_PASSWORD=your_app_password
 
@@ -501,82 +461,89 @@ LOCAL_SMTP_PORT=1025
 APP_HOST=0.0.0.0
 APP_PORT=5000
 
+PHISHING_THRESHOLD=0.60
 AUTO_SYNC_ON_START=false
+```
 
-Notes:
+### 10.4 Run
 
-1. EMAIL_APP_PASSWORD is normalized by stripping spaces before auth.
-2. AUTO_SYNC_ON_START=true enables startup mailbox sync.
-
-### 9.4 Run
-
+```
 python app.py
+```
 
 Open:
 
 1. http://127.0.0.1:5000/
 2. http://127.0.0.1:5000/mail-dashboard
 
-## 10. Verification Checklist
+## 11. Verification Checklist
 
 1. Verify local SMTP status:
 
+```
 curl http://127.0.0.1:5000/api/local-server-status
+```
 
 Expected: local_server_up should be true.
 
 2. Verify prediction endpoint:
 
-curl -X POST http://127.0.0.1:5000/predict -H "Content-Type: application/json" -d '{"email_text":"Please verify your account now","subject":"Urgent security alert"}'
+```
+curl -X POST http://127.0.0.1:5000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"email_text":"Please verify your account now","subject":"Urgent security alert"}'
+```
 
-3. Verify activity retrieval:
+3. Verify model info:
 
-curl "http://127.0.0.1:5000/api/activity?limit=5"
+```
+curl http://127.0.0.1:5000/api/model-info
+```
 
 4. Optional: trigger IMAP sync:
 
+```
 curl -X POST "http://127.0.0.1:5000/api/sync-inbox?limit=5"
+```
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
-### 11.1 Local SMTP shows offline
+### 12.1 Local SMTP shows offline
 
 1. Ensure app.py process is running.
 2. Check LOCAL_SMTP_PORT conflicts.
 3. Query /api/local-server-status directly.
-4. If port is occupied by another process, free or change port.
 
-### 11.2 Model load or training errors
+### 12.2 Model file missing on startup
 
-1. Confirm dataset.csv exists and has required columns.
-2. Check scikit-learn/pandas installation.
-3. Remove stale model artifact and restart to force retrain when needed.
+If models/phishing_detection.pkl is missing:
 
-### 11.3 IMAP auth failures
+1. app.py will automatically call train.py to rebuild it.
+2. Or retrain manually: python train.py
+3. Or use SmartJasus_RealWorld_Colab.ipynb on Google Colab and copy the .pkl here.
+
+### 12.3 IMAP auth failures
 
 1. Verify EMAIL_ADDRESS and EMAIL_APP_PASSWORD.
 2. Ensure provider allows IMAP and app password usage.
-3. Verify IMAP host/port values.
 
-### 11.4 SMTP send failures
+### 12.4 SMTP send failures
 
 1. Verify SMTP_HOST, SMTP_PORT, TLS setting.
 2. For Gmail, use App Password with account 2FA enabled.
 
-### 11.5 PostgreSQL connection issues
+### 12.5 PostgreSQL connection issues
 
 1. Verify DB service is running.
 2. Validate DB credentials in .env.
-3. Check DB user permissions for DB/table creation.
-4. See DATABASE_SETUP.md for full diagnostics.
+3. See DATABASE_SETUP.md for full diagnostics.
 
-## 12. Security and Operational Notes
+## 13. Security and Operational Notes
 
 1. Never commit .env with real credentials.
 2. This project is configured for development/local SOC simulation.
 3. Restrict CORS, host binding, and credential handling before production deployment.
-4. Add proper secret management and audit logging for production use.
 
-## 13. License
+## 14. License
 
 This project is licensed under the MIT License.
