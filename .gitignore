@@ -2,3 +2,14 @@
 .venv/
 datasets/
 __pycache__/
+dataset/CEAS_08.csv
+dataset/dataset1.csv
+dataset/dataset2.csv
+dataset/dataset3.csv
+dataset/dataset4.csv
+dataset/dataset5.csv
+dataset/Enron.csv
+dataset/Ling.csv
+dataset/Nazario.csv
+dataset/Nigerian_Fraud.csv
+SpamAssasin.csv
