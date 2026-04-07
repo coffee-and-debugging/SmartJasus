@@ -30,6 +30,7 @@ Algorithms compared:
 import json
 import os
 import re
+import warnings
 
 import joblib
 import numpy as np
@@ -376,7 +377,7 @@ def get_model_catalogue() -> dict:
             n_estimators=200, learning_rate=0.08, max_depth=5,
             subsample=0.8, colsample_bytree=0.8,
             eval_metric="logloss", random_state=42,
-            use_label_encoder=False, n_jobs=-1,
+            n_jobs=-1,
         )
     except ImportError:
         pass
@@ -432,8 +433,10 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
 
         pipe.fit(X_train, y_train, **fit_params)
 
-        y_proba   = pipe.predict_proba(X_test)[:, 1]
-        y_pred_50 = pipe.predict(X_test)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=FutureWarning, module="sklearn")
+            y_proba   = pipe.predict_proba(X_test)[:, 1]
+            y_pred_50 = pipe.predict(X_test)
         y_pred_th = (y_proba >= threshold).astype(int)
 
         auc   = roc_auc_score(y_test, y_proba)
@@ -466,7 +469,9 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
 
     print(f"\n[Train] ★ Best model: {best_name}  (F1@{threshold}={best_f1:.4f})")
 
-    y_proba_best = best_pipeline.predict_proba(X_test)[:, 1]
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning, module="sklearn")
+        y_proba_best = best_pipeline.predict_proba(X_test)[:, 1]
     y_pred_best  = (y_proba_best >= threshold).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred_best).ravel()
     print(f"\n[Train] === {best_name} — Detailed Report (threshold={threshold}) ===")
