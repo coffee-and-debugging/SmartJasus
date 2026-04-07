@@ -1,5 +1,5 @@
 """
-SmartJasus — Flask Application
+CatchFish — Flask Application
 ================================
 Serves the phishing detection API, local SMTP mail server,
 dashboard UI, and all data-access endpoints.
@@ -101,7 +101,7 @@ mail_store = MailStore(
 )
 local_smtp_server = None
 
-print("[SmartJasus] Server starting …")
+print("[CatchFish] Server starting …")
 
 # ── Model loading ──────────────────────────────────────────────────────────────
 _model_pipeline = None
@@ -125,7 +125,7 @@ def load_model() -> None:
         _model_pipeline = payload  # legacy plain pipeline
         _model_meta = {"model_name": "legacy", "threshold": PHISHING_THRESHOLD}
 
-    print(f"[SmartJasus] Model loaded: {_model_meta.get('model_name','unknown')}  "
+    print(f"[CatchFish] Model loaded: {_model_meta.get('model_name','unknown')}  "
           f"AUC={_model_meta.get('auc','—')}  threshold={PHISHING_THRESHOLD}")
 
 
@@ -911,9 +911,9 @@ if __name__ == "__main__":
                 sync_inbox(limit=20)
             except Exception:
                 pass
-        print(f"[SmartJasus] Web    : http://127.0.0.1:{APP_PORT}")
-        print(f"[SmartJasus] SMTP   : {LOCAL_SMTP_HOST}:{LOCAL_SMTP_PORT}  (@{LOCAL_DOMAIN})")
-        print(f"[SmartJasus] Model  : {_model_meta.get('model_name','?')}  threshold={PHISHING_THRESHOLD}")
-        print(f"[SmartJasus] VT API : {'enabled' if VIRUSTOTAL_API_KEY else 'disabled'}")
+        print(f"[CatchFish] Web    : http://127.0.0.1:{APP_PORT}")
+        print(f"[CatchFish] SMTP   : {LOCAL_SMTP_HOST}:{LOCAL_SMTP_PORT}  (@{LOCAL_DOMAIN})")
+        print(f"[CatchFish] Model  : {_model_meta.get('model_name','?')}  threshold={PHISHING_THRESHOLD}")
+        print(f"[CatchFish] VT API : {'enabled' if VIRUSTOTAL_API_KEY else 'disabled'}")
 
     app.run(debug=True, host=APP_HOST, port=APP_PORT, threaded=True)

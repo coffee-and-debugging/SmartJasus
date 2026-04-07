@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SmartJasus | SOC Overview</title>
+    <title>CatchFish | SOC Overview</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -361,8 +361,8 @@
     <!-- ── Sidebar ── -->
     <div class="cis-sidebar">
         <div class="logo-area">
-            <div class="logo-icon"><img src="/web-icon.png" alt="SmartJasus"></div>
-            <div class="logo-text">SmartJasus<span class="logo-sub">Phishing Detection</span></div>
+            <div class="logo-icon"><img src="/web-icon.png" alt="CatchFish"></div>
+            <div class="logo-text">CatchFish<span class="logo-sub">Phishing Detection</span></div>
         </div>
         <div class="nav-section">Navigation</div>
         <div class="nav-menu">
@@ -561,7 +561,7 @@
             </div>
         </div>
 
-        <footer><i class="fas fa-lock"></i> SmartJasus &mdash; Real-time ML Phishing Detection System</footer>
+        <footer><i class="fas fa-lock"></i> CatchFish &mdash; Real-time ML Phishing Detection System</footer>
     </div>
 </div>
 
@@ -708,21 +708,21 @@
 
     function cacheEmailData(items) {
         try {
-            localStorage.setItem('smartJasusCacheVersion', CACHE_VERSION);
-            localStorage.setItem('smartJasusEmailCache', JSON.stringify(items.slice(0, CACHE_LIMIT)));
-            localStorage.setItem('smartJasusCacheTime', String(Date.now()));
+            localStorage.setItem('CatchFishCacheVersion', CACHE_VERSION);
+            localStorage.setItem('CatchFishEmailCache', JSON.stringify(items.slice(0, CACHE_LIMIT)));
+            localStorage.setItem('CatchFishCacheTime', String(Date.now()));
         } catch(e) { console.warn('Cache storage error:', e); }
     }
 
     function loadCachedEmails() {
         try {
-            const storedVersion = localStorage.getItem('smartJasusCacheVersion');
+            const storedVersion = localStorage.getItem('CatchFishCacheVersion');
             if (storedVersion !== CACHE_VERSION) {
-                localStorage.removeItem('smartJasusEmailCache');
-                localStorage.setItem('smartJasusCacheVersion', CACHE_VERSION);
+                localStorage.removeItem('CatchFishEmailCache');
+                localStorage.setItem('CatchFishCacheVersion', CACHE_VERSION);
                 return [];
             }
-            const cached = localStorage.getItem('smartJasusEmailCache');
+            const cached = localStorage.getItem('CatchFishEmailCache');
             return cached ? normalizeEmails(JSON.parse(cached)) : [];
         } catch(e) {
             console.warn('Cache load error:', e);

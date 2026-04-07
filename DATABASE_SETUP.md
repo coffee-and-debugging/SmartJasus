@@ -1,4 +1,4 @@
-# PostgreSQL Setup Guide For SmartJasus
+# PostgreSQL Setup Guide For CatchFish
 
 This document reflects the current implementation in app.py and local_mail_server.py.
 
@@ -56,7 +56,7 @@ pip install -r requirements.txt
 
 This includes psycopg2-binary, so no extra DB package step is required.
 
-## 5. Start SmartJasus
+## 5. Start CatchFish
 
 Run:
 

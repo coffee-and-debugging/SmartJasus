@@ -1,5 +1,5 @@
 """
-SmartJasus — ML Training Pipeline
+CatchFish — ML Training Pipeline
 ===================================
 Trains multiple classifiers on real-world CSV datasets found in dataset/,
 selects the best by F1-score at the production threshold (0.60),

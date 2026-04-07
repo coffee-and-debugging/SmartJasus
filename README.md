@@ -1,6 +1,6 @@
-# SmartJasus
+# CatchFish
 
-SmartJasus is an end-to-end phishing detection system that combines machine learning, email ingestion, and security dashboards in one Flask application.
+CatchFish is an end-to-end phishing detection system that combines machine learning, email ingestion, and security dashboards in one Flask application.
 
 It is trained on **real-world email datasets** (CEAS_08, Enron, Ling, Nazario, Nigerian Fraud, SpamAssasin) — over 80,000 authentic emails.
 
@@ -12,7 +12,7 @@ Usage modes:
 
 ## 1. Project Purpose
 
-SmartJasus classifies email content as either phishing or legitimate and tracks scanned records in PostgreSQL for monitoring and investigation.
+CatchFish classifies email content as either phishing or legitimate and tracks scanned records in PostgreSQL for monitoring and investigation.
 
 Core outcomes:
 
@@ -100,7 +100,7 @@ When python app.py starts:
 
 ### 3.2 Ingestion workflows
 
-SmartJasus ingests mail-like content through four paths:
+CatchFish ingests mail-like content through four paths:
 
 1. Manual prediction
    - UI or API POST to /predict
@@ -264,7 +264,7 @@ This will:
 
 To retrain on Google Colab (recommended for slow machines):
 - Upload dataset/ folder to Google Drive
-- Open SmartJasus_RealWorld_Colab.ipynb in Colab
+- Open CatchFish_RealWorld_Colab.ipynb in Colab
 - Set DATASET_PATH and run all cells
 - Download the generated .pkl and place in models/
 
@@ -401,7 +401,7 @@ Extension/
 app.py                          Flask app, endpoints, inference, IMAP sync
 train.py                        ML training pipeline on real-world data
 local_mail_server.py            PostgreSQL store, SMTP ingest logic
-SmartJasus_RealWorld_Colab.ipynb  Colab training notebook
+CatchFish_RealWorld_Colab.ipynb  Colab training notebook
 requirements.txt                Python dependencies
 DATABASE_SETUP.md               PostgreSQL setup guide
 .env                            Environment config (not committed)
@@ -520,7 +520,7 @@ If models/phishing_detection.pkl is missing:
 
 1. app.py will automatically call train.py to rebuild it.
 2. Or retrain manually: python train.py
-3. Or use SmartJasus_RealWorld_Colab.ipynb on Google Colab and copy the .pkl here.
+3. Or use CatchFish_RealWorld_Colab.ipynb on Google Colab and copy the .pkl here.
 
 ### 12.3 IMAP auth failures
 
