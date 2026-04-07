@@ -24,6 +24,7 @@
             --orange: #C97B20;
             --input-bg: #050810;
             --mono: 'Consolas', 'SFMono-Regular', monospace;
+            --console-card-height: 560px;
         }
 
         body {
@@ -179,15 +180,19 @@
         .card-body { padding: 14px; }
 
         /* ── Grid ───────────────────────────────────────────────── */
-        .cis-grid   { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-bottom: 12px; align-items: start; }
+        .cis-grid   { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-bottom: 12px; align-items: stretch; }
+        .cis-grid > .cis-card { height: var(--console-card-height); min-height: var(--console-card-height); display: flex; flex-direction: column; }
+        .cis-grid > .cis-card > .card-body { flex: 1; min-height: 0; }
+        .cis-grid > .cis-card:not(.inbox-card) > .card-body { overflow-y: auto; }
         .inbox-card { display: flex; flex-direction: column; }
-        .inbox-card .card-body { display: flex; flex-direction: column; overflow: hidden; max-height: 680px; }
+        .inbox-card .card-body { display: flex; flex-direction: column; overflow: hidden; }
         #inboxView  { display: flex; flex-direction: column; min-height: 0; flex: 1; }
         #mailList   { flex: 1; overflow-y: auto; max-height: none; }
         #logsList   { flex: 1; overflow-y: auto; max-height: none; }
         .bottom-grid{ display: grid; grid-template-columns: 1fr 1.7fr; gap: 12px; margin-bottom: 12px; }
         @media (max-width: 1100px) {
             .cis-grid, .bottom-grid { grid-template-columns: 1fr; }
+            .cis-grid > .cis-card { height: auto; min-height: 0; }
             .cis-sidebar { width: 190px; }
             .stats-row { grid-template-columns: repeat(2, 1fr); }
         }
@@ -215,6 +220,7 @@
             box-shadow: 0 0 0 2px rgba(46,125,211,0.14);
         }
         textarea { min-height: 82px; resize: vertical; }
+        #mailBody { min-height: 150px; }
         .compose-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
         /* ── Mode toggle ─────────────────────────────────────────── */
@@ -260,7 +266,7 @@
         .btn-sm { padding: 4px 10px; font-size: 0.7rem; }
 
         /* ── Result panel ────────────────────────────────────────── */
-        .result-panel { margin-top: 12px; padding: 11px; border-radius: 4px; border: 1px solid; display: none; }
+        .result-panel { margin-top: 0; padding: 11px; border-radius: 4px; border: 1px solid; display: none; }
         .result-panel.show { display: block; }
         .result-panel.phishing  { border-color: rgba(201,48,48,0.35);  background: rgba(201,48,48,0.04);  }
         .result-panel.legitimate{ border-color: rgba(13,158,116,0.35); background: rgba(13,158,116,0.04); }
