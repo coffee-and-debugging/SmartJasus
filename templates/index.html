@@ -162,7 +162,8 @@
 
         /* ── Grid ───────────────────────────────────────────────── */
         .main-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 12px; margin-bottom: 12px; }
-        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; margin-bottom: 12px; }
+        .bottom-grid > .cis-card:first-child { grid-column: 1 / -1; }
         @media (max-width: 1100px) {
             .main-grid, .bottom-grid { grid-template-columns: 1fr; }
             .cis-sidebar { width: 190px; }
@@ -267,7 +268,8 @@
         /* ── Pipeline ────────────────────────────────────────────── */
         .pipe-row {
             display: flex; align-items: center; gap: 0;
-            flex-wrap: wrap; padding: 6px 0; justify-content: center;
+            flex-wrap: nowrap; padding: 6px 0; justify-content: center;
+            overflow-x: auto;
         }
         .pipe-step {
             text-align: center; padding: 9px 12px;
@@ -773,7 +775,7 @@
         if (!btn) return;
         btn.addEventListener('click', () => {
             const nextTheme = document.body.classList.contains('light-mode') ? 'dark' : 'light';
-            localStorage.setItem('smartJasusTheme', nextTheme);
+            localStorage.setItem('sjTheme', nextTheme);
             applyTheme(nextTheme);
         });
     }
@@ -806,7 +808,7 @@
 
     // ── Init ────────────────────────────────────────────────────────────────
 
-    const savedTheme = localStorage.getItem('smartJasusTheme') || 'dark';
+    const savedTheme = localStorage.getItem('sjTheme') || 'dark';
     applyTheme(savedTheme);
     initThemeToggle('themeToggleIndex');
 
