@@ -542,6 +542,11 @@
                         <label>Body</label>
                         <textarea id="mailBody" placeholder="Write email content here...&#10;&#10;Paste URLs to test: https://example.com"></textarea>
                     </div>
+                    <div class="input-group" id="attachmentGroup" style="display:none">
+                        <label><i class="fas fa-paperclip" style="color:var(--accent)"></i> Attachment</label>
+                        <input type="file" id="mailAttachment" style="color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:100%;box-sizing:border-box;font-size:0.78rem;cursor:pointer;">
+                        <div id="attachmentInfo" style="font-size:0.7rem;color:var(--muted);margin-top:4px;"></div>
+                    </div>
 
                     <div class="btn-row">
                         <button class="btn-primary" id="actionBtn" onclick="handleAction()">
@@ -856,6 +861,7 @@ function setMode(mode) {
     composeMode = mode;
     document.getElementById('modeScan').classList.toggle('active', mode === 'scan');
     document.getElementById('modeSend').classList.toggle('active', mode === 'send');
+    document.getElementById('attachmentGroup').style.display = mode === 'send' ? 'block' : 'none';
     const lbl = document.getElementById('actionBtnLabel');
     const btn = document.getElementById('actionBtn');
     if (mode === 'send') {
@@ -864,8 +870,24 @@ function setMode(mode) {
     } else {
         lbl.textContent = 'Scan Email';
         btn.querySelector('i').className = 'fas fa-magnifying-glass';
+        document.getElementById('mailAttachment').value = '';
+        document.getElementById('attachmentInfo').textContent = '';
     }
 }
+
+// Show file size info when a file is chosen
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('mailAttachment').addEventListener('change', function() {
+        const info = document.getElementById('attachmentInfo');
+        if (this.files && this.files[0]) {
+            const f = this.files[0];
+            const kb = (f.size / 1024).toFixed(1);
+            info.textContent = `${f.name}  (${kb} KB)`;
+        } else {
+            info.textContent = '';
+        }
+    });
+});
 
 // ── User management ──────────────────────────────────────────────────────────
 
@@ -961,6 +983,9 @@ async function handleAction() {
     const stat = document.getElementById('sendStatus');
     const rp   = document.getElementById('resultPanel');
 
+    const fileInput = document.getElementById('mailAttachment');
+    const attachedFile = (composeMode === 'send' && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+
     if (!body && !subj) {
         stat.innerHTML = '<span style="color:#F08080">Please enter a subject or body.</span>';
         return;
@@ -975,7 +1000,8 @@ async function handleAction() {
             method: 'POST', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
                 email_text: body, subject: subj,
-                sender_domain: senderDomain(from), has_attachment: 0,
+                sender_domain: senderDomain(from),
+                has_attachment: attachedFile ? 1 : 0,
             })
         });
 
@@ -985,11 +1011,30 @@ async function handleAction() {
         if (composeMode === 'send') {
             if (!from) { stat.innerHTML = '<span style="color:#F08080">Select a From address to send.</span>'; return; }
             if (!to)   { stat.innerHTML = '<span style="color:#F08080">Enter a To address to send.</span>'; return; }
+
+            const sendPayload = { from_address: from, to_address: to, subject: subj, body };
+
+            if (attachedFile) {
+                const b64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(attachedFile);
+                });
+                sendPayload.attachment_b64   = b64;
+                sendPayload.attachment_name  = attachedFile.name;
+                sendPayload.attachment_mime  = attachedFile.type || 'application/octet-stream';
+            }
+
             await fetchJSON('/api/send-local', {
                 method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({from_address: from, to_address: to, subject: subj, body})
+                body: JSON.stringify(sendPayload)
             });
-            stat.innerHTML = `<span style="color:#5AE8B4"><i class="fas fa-check-circle"></i> Sent to <strong>${escHtml(to)}</strong> via Local SMTP. Email scanned.</span>`;
+
+            const attachNote = attachedFile ? ` with attachment <strong>${escHtml(attachedFile.name)}</strong>` : '';
+            stat.innerHTML = `<span style="color:#5AE8B4"><i class="fas fa-check-circle"></i> Sent to <strong>${escHtml(to)}</strong>${attachNote} via Local SMTP. Email scanned.</span>`;
+            fileInput.value = '';
+            document.getElementById('attachmentInfo').textContent = '';
             setTimeout(() => refreshInbox(true), 1200);
         } else {
             const verdict = result.prediction === 'phishing' ? '⚠ Phishing Detected' : '✓ Legitimate';
