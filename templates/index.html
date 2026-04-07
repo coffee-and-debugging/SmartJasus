@@ -163,7 +163,7 @@
         /* ── Grid ───────────────────────────────────────────────── */
         .main-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 12px; margin-bottom: 12px; }
         .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; margin-bottom: 12px; }
-        .bottom-grid > .cis-card:first-child { grid-column: 1 / -1; }
+        .bottom-grid > .cis-card { grid-column: 1 / -1; }
         @media (max-width: 1100px) {
             .main-grid, .bottom-grid { grid-template-columns: 1fr; }
             .cis-sidebar { width: 190px; }
@@ -265,6 +265,28 @@
         .legend-dot.phish { background: var(--red); }
         .legend-count { font-family: var(--mono); font-weight: 700; color: var(--text); }
 
+        /* ── Analytics extra stats ───────────────────────────────── */
+        .analytics-stats-row {
+            display: flex; gap: 10px; margin-top: 2px;
+        }
+        .analytics-stat {
+            flex: 1; background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 4px; padding: 8px 10px; text-align: center;
+        }
+        .analytics-stat-label { font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 4px; }
+        .analytics-stat-value { font-size: 0.95rem; font-weight: 700; font-family: var(--mono); color: var(--text); }
+        .analytics-stat-value.red    { color: var(--red); }
+        .analytics-stat-value.accent { color: var(--accent); font-size: 0.72rem; word-break: break-all; }
+
+        /* ── Capabilities marquee ─────────────────────────────────── */
+        .cap-marquee-wrap { overflow: hidden; width: 100%; }
+        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .cap-marquee-track {
+            display: flex; width: max-content;
+            animation: marquee 28s linear infinite;
+        }
+        .cap-marquee-track:hover { animation-play-state: paused; }
+
         /* ── Pipeline ────────────────────────────────────────────── */
         .pipe-row {
             display: flex; align-items: center; gap: 0;
@@ -282,14 +304,14 @@
         .pipe-arrow { flex-shrink: 0; padding: 0 4px; color: #253050; font-size: 0.8rem; }
 
         /* ── Capabilities ────────────────────────────────────────── */
-        .cap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .cap-list { list-style: none; padding: 0; }
+        .cap-grid { display: flex; flex-wrap: nowrap; gap: 0; overflow-x: auto; }
+        .cap-list { list-style: none; padding: 0; display: flex; flex-wrap: nowrap; gap: 0; margin: 0; }
         .cap-list li {
-            padding: 6px 0; border-bottom: 1px solid var(--border);
+            padding: 6px 14px; border-right: 1px solid var(--border);
             font-size: 0.78rem; color: var(--muted2);
-            display: flex; gap: 8px; align-items: flex-start;
+            display: flex; gap: 6px; align-items: center; white-space: nowrap; flex-shrink: 0;
         }
-        .cap-list li:last-child { border-bottom: none; }
+        .cap-list li:last-child { border-right: none; }
         .cap-icon { color: var(--green); flex-shrink: 0; margin-top: 2px; font-size: 0.72rem; }
 
         /* ── Light mode ──────────────────────────────────────────── */
@@ -328,6 +350,9 @@
             padding-top: 12px; letter-spacing: 0.5px;
         }
         body.light-mode footer { border-top-color: #CCDAE8; }
+        body.light-mode .analytics-stat { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .analytics-stat-label { color: #6A88A8; }
+        body.light-mode .analytics-stat-value { color: #1A2535; }
     </style>
 </head>
 <body>
@@ -429,6 +454,16 @@
                             </div>
                         </div>
                     </div>
+                    <div class="chart-block">
+                        <div class="chart-title">Phishing Rate — Last 7 Days</div>
+                        <div id="chartPhishRate" class="mini-chart"></div>
+                    </div>
+                    <div class="analytics-stats-row">
+                        <div class="analytics-stat">
+                            <div class="analytics-stat-label">Phishing Rate</div>
+                            <div class="analytics-stat-value red" id="statPhishRate">0%</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -495,20 +530,32 @@
             <!-- System Capabilities -->
             <div class="cis-card">
                 <div class="card-header"><i class="fas fa-shield-virus"></i> System Capabilities</div>
-                <div class="card-body">
-                    <div class="cap-grid">
-                        <ul class="cap-list">
-                            <li><i class="fas fa-check cap-icon"></i>Local SMTP server with multi-user inboxes</li>
-                            <li><i class="fas fa-check cap-icon"></i>Real-time ML scanning on every email</li>
-                            <li><i class="fas fa-check cap-icon"></i>URL analysis: IP, shorteners, HTTP ratio</li>
-                            <li><i class="fas fa-check cap-icon"></i>Domain reputation with VirusTotal integration</li>
-                        </ul>
-                        <ul class="cap-list">
-                            <li><i class="fas fa-check cap-icon"></i>Hybrid detection: ML + rule engine (FP reduction)</li>
-                            <li><i class="fas fa-check cap-icon"></i>Full scan logs: raw ML → adjusted → verdict</li>
-                            <li><i class="fas fa-check cap-icon"></i>Body highlighting: URLs and phishing keywords</li>
-                            <li><i class="fas fa-check cap-icon"></i>Best-of-5 model selection at 0.60 threshold</li>
-                        </ul>
+                <div class="card-body" style="padding: 10px 14px;">
+                    <div class="cap-marquee-wrap">
+                        <div class="cap-marquee-track">
+                            <!-- first copy -->
+                            <ul class="cap-list">
+                                <li><i class="fas fa-check cap-icon"></i>Local SMTP server with multi-user inboxes</li>
+                                <li><i class="fas fa-check cap-icon"></i>Real-time ML scanning on every email</li>
+                                <li><i class="fas fa-check cap-icon"></i>URL analysis: IP, shorteners, HTTP ratio</li>
+                                <li><i class="fas fa-check cap-icon"></i>Domain reputation with VirusTotal integration</li>
+                                <li><i class="fas fa-check cap-icon"></i>Hybrid detection: ML + rule engine (FP reduction)</li>
+                                <li><i class="fas fa-check cap-icon"></i>Full scan logs: raw ML → adjusted → verdict</li>
+                                <li><i class="fas fa-check cap-icon"></i>Body highlighting: URLs and phishing keywords</li>
+                                <li><i class="fas fa-check cap-icon"></i>Best-of-5 model selection at 0.60 threshold</li>
+                            </ul>
+                            <!-- duplicate for seamless loop -->
+                            <ul class="cap-list">
+                                <li><i class="fas fa-check cap-icon"></i>Local SMTP server with multi-user inboxes</li>
+                                <li><i class="fas fa-check cap-icon"></i>Real-time ML scanning on every email</li>
+                                <li><i class="fas fa-check cap-icon"></i>URL analysis: IP, shorteners, HTTP ratio</li>
+                                <li><i class="fas fa-check cap-icon"></i>Domain reputation with VirusTotal integration</li>
+                                <li><i class="fas fa-check cap-icon"></i>Hybrid detection: ML + rule engine (FP reduction)</li>
+                                <li><i class="fas fa-check cap-icon"></i>Full scan logs: raw ML → adjusted → verdict</li>
+                                <li><i class="fas fa-check cap-icon"></i>Body highlighting: URLs and phishing keywords</li>
+                                <li><i class="fas fa-check cap-icon"></i>Best-of-5 model selection at 0.60 threshold</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -751,6 +798,23 @@
         const phishCount = items.filter(it => it.prediction === 'phishing').length;
         renderPieChart(safeCount, phishCount);
         renderBarChart('chartDaily', dayRows);
+
+        // Phishing rate per day bar chart
+        const phishRateRows = dayRows.map((row, i) => {
+            const key = new Date(today);
+            key.setDate(today.getDate() - (6 - i));
+            const keyStr = key.toISOString().slice(0, 10);
+            const dayItems = items.filter(it => String(it.received_at || '').slice(0, 10) === keyStr);
+            const rate = dayItems.length ? Math.round((dayItems.filter(it => it.prediction === 'phishing').length / dayItems.length) * 100) : 0;
+            return { label: row.label, value: rate };
+        });
+        renderBarChart('chartPhishRate', phishRateRows);
+
+        // Inline stats
+        const total = safeCount + phishCount;
+        const phishRate = total ? Math.round((phishCount / total) * 100) : 0;
+        const rateEl = document.getElementById('statPhishRate');
+        if (rateEl) rateEl.textContent = phishRate + '%';
     }
 
     function renderPieChart(safeCount, phishCount) {
