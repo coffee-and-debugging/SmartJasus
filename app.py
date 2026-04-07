@@ -5,6 +5,7 @@ Serves the phishing detection API, local SMTP mail server,
 dashboard UI, and all data-access endpoints.
 """
 
+import base64
 import json
 import logging
 import os
@@ -515,12 +516,20 @@ def send_local_email():
     if not to_addr:
         return jsonify({"error": "to_address is required"}), 400
 
+    attachment_b64 = data.get("attachment_b64", "")
+    attachment_name = data.get("attachment_name", "")
+    attachment_mime = data.get("attachment_mime", "application/octet-stream")
+
     try:
         msg = EmailMessage()
         msg["From"] = from_addr
         msg["To"] = to_addr
         msg["Subject"] = subject
         msg.set_content(body)
+        if attachment_b64 and attachment_name:
+            file_bytes = base64.b64decode(attachment_b64)
+            maintype, subtype = attachment_mime.split("/", 1) if "/" in attachment_mime else ("application", "octet-stream")
+            msg.add_attachment(file_bytes, maintype=maintype, subtype=subtype, filename=attachment_name)
         with smtplib.SMTP(LOCAL_SMTP_HOST, LOCAL_SMTP_PORT, timeout=10) as smtp:
             smtp.send_message(msg)
         return jsonify({"status": "sent", "from": from_addr, "to": to_addr})
