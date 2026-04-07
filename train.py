@@ -1,18 +1,18 @@
 """
 SmartJasus — ML Training Pipeline
 ===================================
-Trains multiple classifiers on ALL CSV datasets found in dataset/,
+Trains multiple classifiers on real-world CSV datasets found in dataset/,
 selects the best by F1-score at the production threshold (0.60),
 and saves the winner to models/phishing_detection.pkl.
+
+Synthetic files named datasetN.csv (dataset1.csv, dataset2.csv, …) are
+automatically excluded. All other CSVs are included.
 
 Supported dataset schemas (auto-detected per file):
   Schema A — original datasets (CEAS_08, Enron, Ling, Nazario, …):
     columns: sender, body, subject, label (int 0/1)
-  Schema B — pre-processed format (dataset1–dataset5, …):
-    columns: email_text, subject, has_attachment, links_count,
-             sender_domain, urgent_keywords, label (text phishing/legitimate)
 
-Any CSV added to dataset/ is automatically included — no code changes needed.
+Any real-world CSV added to dataset/ is automatically included.
 
 Reference data (dataset/):
   - legitimate_domains.json
@@ -220,9 +220,15 @@ def _load_any_csv(fpath: str) -> pd.DataFrame:
     return out
 
 
+_SYNTHETIC_CSV_RE = re.compile(r"^dataset\d+\.csv$", re.IGNORECASE)
+
+
 def _discover_csv_files() -> list:
-    """Return all CSV filenames in dataset/, sorted alphabetically."""
-    return sorted(f for f in os.listdir(_DATASET) if f.lower().endswith(".csv"))
+    """Return real-world CSV filenames in dataset/, skipping datasetN.csv files."""
+    return sorted(
+        f for f in os.listdir(_DATASET)
+        if f.lower().endswith(".csv") and not _SYNTHETIC_CSV_RE.match(f)
+    )
 
 
 def load_real_world_dataset() -> pd.DataFrame:

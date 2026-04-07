@@ -764,6 +764,109 @@ def domain_reputation():
     return jsonify(result)
 
 
+# ── File Scan (VirusTotal) ─────────────────────────────────────────────────────
+
+@app.route("/api/scan-file", methods=["POST"])
+def scan_file():
+    """
+    Scan a file with VirusTotal.
+    Strategy:
+      1. Hash the file (SHA-256) and query VT for an existing report — instant if known.
+      2. If no prior report, upload the file and poll until completed (up to 90 s).
+    """
+    if not VIRUSTOTAL_API_KEY:
+        return jsonify({"error": "VirusTotal API key not configured"}), 503
+
+    data = request.get_json() or {}
+    file_b64 = data.get("file_b64", "")
+    file_name = data.get("file_name", "attachment")
+    file_mime = data.get("file_mime", "application/octet-stream")
+
+    if not file_b64:
+        return jsonify({"error": "file_b64 is required"}), 400
+
+    try:
+        import hashlib
+        import requests as req_lib
+        import time as _time
+
+        file_bytes = base64.b64decode(file_b64)
+        sha256 = hashlib.sha256(file_bytes).hexdigest()
+        vt_headers = {"x-apikey": VIRUSTOTAL_API_KEY}
+
+        def _parse_stats(attrs):
+            stats = attrs.get("last_analysis_stats") or attrs.get("stats", {})
+            malicious  = stats.get("malicious",  0)
+            suspicious = stats.get("suspicious", 0)
+            if malicious > 0:
+                verdict = "malicious"
+            elif suspicious > 0:
+                verdict = "suspicious"
+            else:
+                verdict = "clean"
+            return verdict, stats
+
+        # ── Step 1: check existing report by hash ────────────────────────────
+        hash_resp = req_lib.get(
+            f"https://www.virustotal.com/api/v3/files/{sha256}",
+            headers=vt_headers,
+            timeout=15,
+        )
+        if hash_resp.status_code == 200:
+            attrs = hash_resp.json().get("data", {}).get("attributes", {})
+            verdict, stats = _parse_stats(attrs)
+            return jsonify({
+                "verdict": verdict,
+                "stats": stats,
+                "file_name": file_name,
+                "sha256": sha256,
+                "source": "cached",
+            })
+
+        # ── Step 2: upload file ──────────────────────────────────────────────
+        upload_resp = req_lib.post(
+            "https://www.virustotal.com/api/v3/files",
+            headers=vt_headers,
+            files={"file": (file_name, file_bytes, file_mime)},
+            timeout=60,
+        )
+        if upload_resp.status_code not in (200, 201):
+            return jsonify({"error": f"VT upload failed: HTTP {upload_resp.status_code}"}), 502
+
+        analysis_id = upload_resp.json().get("data", {}).get("id", "")
+        if not analysis_id:
+            return jsonify({"error": "No analysis ID returned from VirusTotal"}), 502
+
+        # ── Step 3: poll until completed (up to 90 s, every 15 s) ───────────
+        stats = {}
+        verdict = "unknown"
+        for attempt in range(6):          # 6 × 15 s = 90 s max
+            _time.sleep(15)
+            poll_resp = req_lib.get(
+                f"https://www.virustotal.com/api/v3/analyses/{analysis_id}",
+                headers=vt_headers,
+                timeout=20,
+            )
+            if poll_resp.status_code != 200:
+                continue
+            attrs = poll_resp.json().get("data", {}).get("attributes", {})
+            if attrs.get("status") == "completed":
+                verdict, stats = _parse_stats(attrs)
+                break
+
+        return jsonify({
+            "verdict": verdict,
+            "stats": stats,
+            "file_name": file_name,
+            "sha256": sha256,
+            "analysis_id": analysis_id,
+            "source": "uploaded",
+        })
+
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
 # ── Legacy persist endpoint ────────────────────────────────────────────────────
 
 @app.route("/api/persist-records", methods=["POST"])

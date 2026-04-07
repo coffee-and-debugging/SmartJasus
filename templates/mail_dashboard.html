@@ -179,7 +179,12 @@
         .card-body { padding: 14px; }
 
         /* ── Grid ───────────────────────────────────────────────── */
-        .cis-grid   { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-bottom: 12px; }
+        .cis-grid   { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-bottom: 12px; align-items: start; }
+        .inbox-card { display: flex; flex-direction: column; }
+        .inbox-card .card-body { display: flex; flex-direction: column; overflow: hidden; max-height: 680px; }
+        #inboxView  { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+        #mailList   { flex: 1; overflow-y: auto; max-height: none; }
+        #logsList   { flex: 1; overflow-y: auto; max-height: none; }
         .bottom-grid{ display: grid; grid-template-columns: 1fr 1.7fr; gap: 12px; margin-bottom: 12px; }
         @media (max-width: 1100px) {
             .cis-grid, .bottom-grid { grid-template-columns: 1fr; }
@@ -445,6 +450,113 @@
             padding-top: 12px; letter-spacing: 0.5px;
         }
         body.light-mode footer { border-top-color: #CCDAE8; }
+
+        /* ── VirusTotal file scan result badge ─────────────────────────────── */
+        .vt-scanning {
+            background: var(--surface2); color: var(--muted);
+        }
+        .vt-malicious {
+            background: rgba(201,48,48,0.18); color: #F08080;
+        }
+        .vt-suspicious {
+            background: rgba(240,170,50,0.18); color: #F0AA32;
+        }
+        .vt-clean {
+            background: rgba(90,232,180,0.12); color: #5AE8B4;
+        }
+        .vt-unknown {
+            background: var(--surface2); color: var(--muted);
+        }
+        .vt-error {
+            background: rgba(240,128,128,0.12); color: #F08080;
+        }
+        body.light-mode .vt-scanning { background: #EEF3FB; color: #546880; }
+        body.light-mode .vt-malicious { background: #FEE2E2; color: #B91C1C; }
+        body.light-mode .vt-suspicious { background: #FEF3C7; color: #92400E; }
+        body.light-mode .vt-clean { background: #D1FAE5; color: #065F46; }
+        body.light-mode .vt-unknown { background: #EEF3FB; color: #546880; }
+        body.light-mode .vt-error { background: #FEE2E2; color: #B91C1C; }
+        body.light-mode #mailAttachment { background: #F4F7FC !important; color: #0F172A !important; border-color: #BDD0E4 !important; }
+
+        /* ── File Scanner section ──────────────────────────────────────────── */
+        .fs-layout {
+            display: grid; grid-template-columns: 1fr 280px; gap: 14px; align-items: start;
+        }
+        @media (max-width: 900px) { .fs-layout { grid-template-columns: 1fr; } }
+
+        .fs-drop-zone {
+            border: 2px dashed var(--border2); border-radius: 6px;
+            padding: 28px 20px; text-align: center; cursor: pointer;
+            background: var(--surface2); transition: border-color .2s, background .2s;
+            min-height: 110px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 6px;
+        }
+        .fs-drop-zone:hover, .fs-drop-zone.dragover {
+            border-color: var(--accent); background: rgba(46,125,211,0.06);
+        }
+        .fs-drop-icon { font-size: 2rem; color: var(--accent); margin-bottom: 4px; }
+        .fs-drop-label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+        .fs-drop-sub   { font-size: 0.68rem; color: var(--muted); }
+
+        .fs-info-col { display: flex; flex-direction: column; }
+        .fs-file-info {
+            display: flex; gap: 10px; align-items: flex-start;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 5px; padding: 10px 12px;
+        }
+        .fs-file-icon-wrap { padding-top: 2px; }
+        .fs-file-icon { font-size: 1.4rem; color: var(--accent); }
+        .fs-file-name { font-size: 0.78rem; font-weight: 600; color: var(--text); word-break: break-all; }
+        .fs-file-size { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+        .fs-file-hash { font-size: 0.6rem; color: var(--muted); margin-top: 3px; font-family: var(--mono); word-break: break-all; }
+        .fs-nofile-hint { font-size: 0.73rem; color: var(--muted); text-align: center; padding: 14px 0; }
+
+        .fs-result {
+            margin-top: 14px; border-radius: 5px; overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .fs-result-header {
+            padding: 10px 14px; font-size: 0.85rem; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .fs-result-header.malicious { background: rgba(201,48,48,0.18);  color: #F08080; }
+        .fs-result-header.suspicious{ background: rgba(240,170,50,0.18); color: #F0AA32; }
+        .fs-result-header.clean     { background: rgba(90,232,180,0.12); color: #5AE8B4; }
+        .fs-result-header.unknown   { background: var(--surface2);       color: var(--muted); }
+
+        .fs-stats-row {
+            display: flex; gap: 0; border-top: 1px solid var(--border);
+        }
+        .fs-stat {
+            flex: 1; padding: 8px 10px; text-align: center;
+            border-right: 1px solid var(--border);
+        }
+        .fs-stat:last-child { border-right: none; }
+        .fs-stat-val { font-size: 1.2rem; font-weight: 700; font-family: var(--mono); }
+        .fs-stat-lbl { font-size: 0.58rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-top: 2px; }
+        .fs-stat-val.red    { color: #F08080; }
+        .fs-stat-val.orange { color: #F0AA32; }
+        .fs-stat-val.green  { color: #5AE8B4; }
+        .fs-stat-val.muted  { color: var(--muted); }
+
+        .fs-detail {
+            padding: 10px 14px; font-size: 0.72rem; color: var(--muted2);
+            border-top: 1px solid var(--border); line-height: 1.6;
+        }
+
+        /* light-mode overrides */
+        body.light-mode .fs-drop-zone    { background: #F4F7FC; border-color: #BDD0E4; }
+        body.light-mode .fs-drop-zone:hover,
+        body.light-mode .fs-drop-zone.dragover { background: #EAF2FF; border-color: #2563EB; }
+        body.light-mode .fs-file-info    { background: #F4F7FC; border-color: #C4D4E8; }
+        body.light-mode .fs-result       { border-color: #C4D4E8; }
+        body.light-mode .fs-stats-row    { border-color: #C4D4E8; }
+        body.light-mode .fs-stat         { border-color: #C4D4E8; }
+        body.light-mode .fs-detail       { border-color: #C4D4E8; color: #4A607A; }
+        body.light-mode .fs-result-header.malicious  { background: #FEE2E2; color: #B91C1C; }
+        body.light-mode .fs-result-header.suspicious { background: #FEF3C7; color: #92400E; }
+        body.light-mode .fs-result-header.clean      { background: #D1FAE5; color: #065F46; }
+        body.light-mode .fs-result-header.unknown    { background: #EEF3FB; color: #546880; }
     </style>
 </head>
 <body>
@@ -542,10 +654,11 @@
                         <label>Body</label>
                         <textarea id="mailBody" placeholder="Write email content here...&#10;&#10;Paste URLs to test: https://example.com"></textarea>
                     </div>
-                    <div class="input-group" id="attachmentGroup" style="display:none">
-                        <label><i class="fas fa-paperclip" style="color:var(--accent)"></i> Attachment</label>
+                    <div class="input-group" id="attachmentGroup">
+                        <label><i class="fas fa-paperclip" style="color:var(--accent)"></i> Attachment <span style="font-size:0.68rem;color:var(--muted);font-weight:400">(scanned by VirusTotal)</span></label>
                         <input type="file" id="mailAttachment" style="color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:100%;box-sizing:border-box;font-size:0.78rem;cursor:pointer;">
                         <div id="attachmentInfo" style="font-size:0.7rem;color:var(--muted);margin-top:4px;"></div>
+                        <div id="vtFileResult" style="display:none;margin-top:6px;padding:7px 10px;border-radius:5px;font-size:0.75rem;font-weight:600;"></div>
                     </div>
 
                     <div class="btn-row">
@@ -579,7 +692,7 @@
             </div>
 
             <!-- RIGHT: Inbox + Logs -->
-            <div class="cis-card">
+            <div class="cis-card inbox-card">
                 <div class="card-header">
                     <i class="fas fa-inbox"></i>
                     <span id="inboxTitle">All Inboxes</span>
@@ -636,10 +749,53 @@
                             <span style="font-size:0.68rem;color:var(--muted)">Full scan trail with rule adjustments</span>
                             <button class="btn-outline btn-sm" onclick="loadLogs()"><i class="fas fa-sync-alt"></i> Reload</button>
                         </div>
-                        <div id="logsList" class="threat-feed" style="max-height:400px;">
+                        <div id="logsList" class="threat-feed">
                             <div class="empty-state"><i class="fas fa-clipboard-list"></i>Click Reload to fetch logs</div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Scanner (full-width) -->
+        <div class="cis-card" style="margin-bottom:12px;">
+            <div class="card-header">
+                <i class="fas fa-virus-slash"></i> VirusTotal File Scanner
+                <span style="font-size:0.65rem;color:var(--muted);font-weight:400;margin-left:8px;">Upload any file or document — scanned by 70+ antivirus engines</span>
+            </div>
+            <div class="card-body">
+                <div class="fs-layout">
+                    <!-- Drop zone + file input -->
+                    <div class="fs-drop-zone" id="fsDropZone" onclick="document.getElementById('fsFileInput').click()">
+                        <i class="fas fa-cloud-arrow-up fs-drop-icon"></i>
+                        <div class="fs-drop-label">Click or drag &amp; drop a file here</div>
+                        <div class="fs-drop-sub">PDF, DOCX, EXE, ZIP, images and more</div>
+                        <input type="file" id="fsFileInput" style="display:none">
+                    </div>
+
+                    <!-- File info + scan button -->
+                    <div class="fs-info-col">
+                        <div id="fsFileInfo" class="fs-file-info" style="display:none;">
+                            <div class="fs-file-icon-wrap"><i class="fas fa-file fs-file-icon" id="fsFileIcon"></i></div>
+                            <div class="fs-file-meta">
+                                <div class="fs-file-name" id="fsFileName">—</div>
+                                <div class="fs-file-size" id="fsFileSize">—</div>
+                                <div class="fs-file-hash" id="fsFileHash"></div>
+                            </div>
+                        </div>
+                        <div id="fsNoFile" class="fs-nofile-hint">No file selected</div>
+                        <button class="btn-primary" id="fsScanBtn" onclick="runFileScan()" disabled style="width:100%;margin-top:10px;">
+                            <i class="fas fa-shield-virus"></i> Scan with VirusTotal
+                        </button>
+                        <div id="fsScanStatus" style="margin-top:8px;font-size:0.73rem;"></div>
+                    </div>
+                </div>
+
+                <!-- Result area -->
+                <div id="fsResult" class="fs-result" style="display:none;">
+                    <div class="fs-result-header" id="fsResultHeader"></div>
+                    <div class="fs-stats-row" id="fsStatsRow"></div>
+                    <div class="fs-detail" id="fsDetail"></div>
                 </div>
             </div>
         </div>
@@ -861,7 +1017,6 @@ function setMode(mode) {
     composeMode = mode;
     document.getElementById('modeScan').classList.toggle('active', mode === 'scan');
     document.getElementById('modeSend').classList.toggle('active', mode === 'send');
-    document.getElementById('attachmentGroup').style.display = mode === 'send' ? 'block' : 'none';
     const lbl = document.getElementById('actionBtnLabel');
     const btn = document.getElementById('actionBtn');
     if (mode === 'send') {
@@ -872,19 +1027,74 @@ function setMode(mode) {
         btn.querySelector('i').className = 'fas fa-magnifying-glass';
         document.getElementById('mailAttachment').value = '';
         document.getElementById('attachmentInfo').textContent = '';
+        document.getElementById('vtFileResult').style.display = 'none';
+        document.getElementById('vtFileResult').textContent = '';
     }
 }
 
-// Show file size info when a file is chosen
+// Show file size info and trigger VirusTotal scan when a file is chosen
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('mailAttachment').addEventListener('change', function() {
+    document.getElementById('mailAttachment').addEventListener('change', async function() {
         const info = document.getElementById('attachmentInfo');
+        const vtBox = document.getElementById('vtFileResult');
         if (this.files && this.files[0]) {
             const f = this.files[0];
             const kb = (f.size / 1024).toFixed(1);
             info.textContent = `${f.name}  (${kb} KB)`;
+
+            // Kick off VirusTotal file scan
+            vtBox.style.display = 'block';
+            vtBox.className = 'vt-scanning';
+            vtBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning with VirusTotal… (up to ~90 s for new files)';
+
+            try {
+                const b64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(f);
+                });
+
+                const resp = await fetchJSON('/api/scan-file', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({file_b64: b64, file_name: f.name, file_mime: f.type || 'application/octet-stream'})
+                });
+
+                if (resp.error) {
+                    vtBox.className = 'vt-error';
+                    vtBox.innerHTML = `<i class="fas fa-circle-exclamation"></i> VT scan error: ${escHtml(resp.error)}`;
+                    return;
+                }
+
+                const stats = resp.stats || {};
+                const malicious  = stats.malicious  || 0;
+                const suspicious = stats.suspicious  || 0;
+                const clean      = stats.harmless    || stats.clean || 0;
+                const undetected = stats.undetected  || 0;
+
+                const cached = resp.source === 'cached' ? ' <span style="opacity:.7;font-weight:400">(cached result)</span>' : '';
+                if (resp.verdict === 'malicious') {
+                    vtBox.className = 'vt-malicious';
+                    vtBox.innerHTML = `<i class="fas fa-triangle-exclamation"></i> DANGEROUS FILE — VirusTotal: ${malicious} engine(s) flagged <strong>MALICIOUS</strong>. Do not send!${cached}`;
+                } else if (resp.verdict === 'suspicious') {
+                    vtBox.className = 'vt-suspicious';
+                    vtBox.innerHTML = `<i class="fas fa-circle-exclamation"></i> WARNING — VirusTotal: ${suspicious} engine(s) flagged <strong>suspicious</strong>. Proceed with caution.${cached}`;
+                } else if (resp.verdict === 'clean') {
+                    vtBox.className = 'vt-clean';
+                    vtBox.innerHTML = `<i class="fas fa-shield-check"></i> File appears clean — ${clean} engine(s) harmless, ${undetected} undetected.${cached}`;
+                } else {
+                    vtBox.className = 'vt-unknown';
+                    vtBox.innerHTML = `<i class="fas fa-circle-question"></i> VT analysis timed out — file submitted, check VirusTotal manually.`;
+                }
+            } catch(e) {
+                vtBox.className = 'vt-error';
+                vtBox.innerHTML = `<i class="fas fa-circle-exclamation"></i> VT scan failed: ${escHtml(e.message)}`;
+            }
         } else {
             info.textContent = '';
+            vtBox.style.display = 'none';
+            vtBox.textContent = '';
         }
     });
 });
@@ -984,7 +1194,7 @@ async function handleAction() {
     const rp   = document.getElementById('resultPanel');
 
     const fileInput = document.getElementById('mailAttachment');
-    const attachedFile = (composeMode === 'send' && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+    const attachedFile = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
 
     if (!body && !subj) {
         stat.innerHTML = '<span style="color:#F08080">Please enter a subject or body.</span>';
@@ -1035,6 +1245,7 @@ async function handleAction() {
             stat.innerHTML = `<span style="color:#5AE8B4"><i class="fas fa-check-circle"></i> Sent to <strong>${escHtml(to)}</strong>${attachNote} via Local SMTP. Email scanned.</span>`;
             fileInput.value = '';
             document.getElementById('attachmentInfo').textContent = '';
+            document.getElementById('vtFileResult').style.display = 'none';
             setTimeout(() => refreshInbox(true), 1200);
         } else {
             const verdict = result.prediction === 'phishing' ? '⚠ Phishing Detected' : '✓ Legitimate';
@@ -1355,6 +1566,186 @@ fetchJSON('/api/model-info').then(info => {
     const el = document.getElementById('dashPipeModel');
     if (el && info.model_name) el.textContent = info.model_name;
 }).catch(() => {});
+
+// ── File Scanner ─────────────────────────────────────────────────────────────
+
+(function() {
+    let fsSelectedFile = null;
+
+    // Icon mapping by extension
+    const EXT_ICONS = {
+        pdf: 'fa-file-pdf', doc: 'fa-file-word', docx: 'fa-file-word',
+        xls: 'fa-file-excel', xlsx: 'fa-file-excel',
+        ppt: 'fa-file-powerpoint', pptx: 'fa-file-powerpoint',
+        zip: 'fa-file-zipper', rar: 'fa-file-zipper', '7z': 'fa-file-zipper',
+        tar: 'fa-file-zipper', gz: 'fa-file-zipper',
+        exe: 'fa-file-code', dll: 'fa-file-code', sh: 'fa-file-code',
+        bat: 'fa-file-code', ps1: 'fa-file-code', js: 'fa-file-code',
+        py: 'fa-file-code', html: 'fa-file-code', htm: 'fa-file-code',
+        png: 'fa-file-image', jpg: 'fa-file-image', jpeg: 'fa-file-image',
+        gif: 'fa-file-image', svg: 'fa-file-image', webp: 'fa-file-image',
+        txt: 'fa-file-lines', csv: 'fa-file-lines', log: 'fa-file-lines',
+        mp4: 'fa-file-video', avi: 'fa-file-video', mov: 'fa-file-video',
+        mp3: 'fa-file-audio', wav: 'fa-file-audio',
+    };
+
+    function getExtIcon(name) {
+        const ext = (name.split('.').pop() || '').toLowerCase();
+        return EXT_ICONS[ext] || 'fa-file';
+    }
+
+    async function sha256hex(buffer) {
+        const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function formatBytes(n) {
+        if (n < 1024)       return n + ' B';
+        if (n < 1048576)    return (n/1024).toFixed(1) + ' KB';
+        return (n/1048576).toFixed(2) + ' MB';
+    }
+
+    async function setFile(file) {
+        fsSelectedFile = file;
+        document.getElementById('fsNoFile').style.display = 'none';
+        document.getElementById('fsFileInfo').style.display = 'flex';
+        document.getElementById('fsFileName').textContent = file.name;
+        document.getElementById('fsFileSize').textContent = formatBytes(file.size);
+        document.getElementById('fsFileHash').textContent = 'Computing SHA-256…';
+        document.getElementById('fsScanBtn').disabled = false;
+        document.getElementById('fsFileIcon').className = `fas ${getExtIcon(file.name)} fs-file-icon`;
+        document.getElementById('fsResult').style.display = 'none';
+        document.getElementById('fsScanStatus').innerHTML = '';
+        // compute hash in browser
+        const buf = await file.arrayBuffer();
+        const hash = await sha256hex(buf);
+        document.getElementById('fsFileHash').textContent = 'SHA-256: ' + hash;
+    }
+
+    // File input change
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('fsFileInput').addEventListener('change', function() {
+            if (this.files && this.files[0]) setFile(this.files[0]);
+        });
+
+        // Drag-and-drop
+        const zone = document.getElementById('fsDropZone');
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            const f = e.dataTransfer.files[0];
+            if (f) setFile(f);
+        });
+    });
+
+    window.runFileScan = async function() {
+        if (!fsSelectedFile) return;
+        const btn    = document.getElementById('fsScanBtn');
+        const status = document.getElementById('fsScanStatus');
+        const result = document.getElementById('fsResult');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning…';
+        status.innerHTML = '<span style="color:var(--muted)"><i class="fas fa-spinner fa-spin"></i> Checking VirusTotal… (cached files return instantly, new files up to ~90 s)</span>';
+        result.style.display = 'none';
+
+        try {
+            const b64 = await new Promise((res, rej) => {
+                const reader = new FileReader();
+                reader.onload = e => res(e.target.result.split(',')[1]);
+                reader.onerror = rej;
+                reader.readAsDataURL(fsSelectedFile);
+            });
+
+            const resp = await fetchJSON('/api/scan-file', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    file_b64:  b64,
+                    file_name: fsSelectedFile.name,
+                    file_mime: fsSelectedFile.type || 'application/octet-stream',
+                })
+            });
+
+            btn.innerHTML = '<i class="fas fa-shield-virus"></i> Scan with VirusTotal';
+            btn.disabled = false;
+
+            if (resp.error) {
+                status.innerHTML = `<span style="color:#F08080"><i class="fas fa-circle-exclamation"></i> ${escHtml(resp.error)}</span>`;
+                return;
+            }
+
+            status.innerHTML = '';
+            renderFsResult(resp);
+
+        } catch(e) {
+            btn.innerHTML = '<i class="fas fa-shield-virus"></i> Scan with VirusTotal';
+            btn.disabled = false;
+            status.innerHTML = `<span style="color:#F08080"><i class="fas fa-circle-exclamation"></i> ${escHtml(e.message)}</span>`;
+        }
+    };
+
+    function renderFsResult(resp) {
+        const result  = document.getElementById('fsResult');
+        const header  = document.getElementById('fsResultHeader');
+        const statsRow= document.getElementById('fsStatsRow');
+        const detail  = document.getElementById('fsDetail');
+
+        const stats      = resp.stats || {};
+        const malicious  = stats.malicious  || 0;
+        const suspicious = stats.suspicious || 0;
+        const harmless   = stats.harmless   || 0;
+        const undetected = stats.undetected || 0;
+        const total      = malicious + suspicious + harmless + undetected;
+        const verdict    = resp.verdict || 'unknown';
+        const cached     = resp.source === 'cached';
+
+        // Header
+        const icons = { malicious:'fa-triangle-exclamation', suspicious:'fa-circle-exclamation', clean:'fa-shield-check', unknown:'fa-circle-question' };
+        const labels= { malicious:'DANGEROUS — Malware Detected', suspicious:'WARNING — Suspicious File', clean:'File Appears Clean', unknown:'Analysis Inconclusive' };
+        header.className = `fs-result-header ${verdict === 'clean' ? 'clean' : verdict}`;
+        header.innerHTML = `<i class="fas ${icons[verdict]||'fa-circle-question'}"></i> ${labels[verdict]||'Unknown'}` +
+            (cached ? ' <span style="font-size:.65rem;font-weight:400;opacity:.7">(cached report)</span>' : '');
+
+        // Stats row
+        statsRow.innerHTML = `
+            <div class="fs-stat">
+                <div class="fs-stat-val red">${malicious}</div>
+                <div class="fs-stat-lbl">Malicious</div>
+            </div>
+            <div class="fs-stat">
+                <div class="fs-stat-val orange">${suspicious}</div>
+                <div class="fs-stat-lbl">Suspicious</div>
+            </div>
+            <div class="fs-stat">
+                <div class="fs-stat-val green">${harmless}</div>
+                <div class="fs-stat-lbl">Harmless</div>
+            </div>
+            <div class="fs-stat">
+                <div class="fs-stat-val muted">${undetected}</div>
+                <div class="fs-stat-lbl">Undetected</div>
+            </div>
+            <div class="fs-stat">
+                <div class="fs-stat-val muted">${total}</div>
+                <div class="fs-stat-lbl">Total Engines</div>
+            </div>`;
+
+        // Detail
+        const sha = resp.sha256 ? `<span style="font-family:var(--mono);font-size:.65rem">${escHtml(resp.sha256)}</span>` : '—';
+        const detectionRate = total > 0 ? `${malicious}/${total} engines flagged this file` : 'No engine data';
+        detail.innerHTML = `
+            <div style="display:flex;flex-wrap:wrap;gap:14px;">
+                <div><strong>File:</strong> ${escHtml(resp.file_name || '—')}</div>
+                <div><strong>SHA-256:</strong> ${sha}</div>
+                <div><strong>Detection:</strong> ${detectionRate}</div>
+                ${resp.analysis_id ? `<div><strong>Analysis ID:</strong> <span style="font-family:var(--mono);font-size:.65rem">${escHtml(resp.analysis_id)}</span></div>` : ''}
+            </div>`;
+
+        result.style.display = 'block';
+    }
+})();
 </script>
 </body>
 </html>
