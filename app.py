@@ -440,7 +440,7 @@ def start_local_smtp_server() -> None:
     try:
         local_smtp_server.start()
     except OSError as exc:
-        if getattr(exc, "errno", None) == 98:
+        if getattr(exc, "errno", None) in (98, 10048):  # Linux / Windows "address already in use"
             local_smtp_server = None
         else:
             raise
