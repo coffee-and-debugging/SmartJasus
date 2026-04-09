@@ -253,8 +253,8 @@
             font-size: 0.82rem;
         }
         .btn-primary:hover { background: #1C4F8A; border-color: #4A9AE0; }
-        .btn-send { background: #0A3D2C; border-color: #0D9E74; color: #5AE8B4; }
-        .btn-send:hover { background: #0D4A35; }
+        .btn-send { background: #17406E; border-color: #2E7DD3; color: #93C5FD; }
+        .btn-send:hover { background: #1C4F8A; }
         .btn-outline {
             background: transparent; border: 1px solid var(--border2);
             border-radius: 4px; padding: 6px 12px;
@@ -578,6 +578,9 @@
         <div class="nav-section">Navigation</div>
         <div class="nav-menu">
             <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>SOC Overview</span></a>
+            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
+            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
+            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
             <a href="/mail-dashboard" class="nav-item active"><i class="fas fa-envelope-open-text"></i><span>Mail Console</span></a>
         </div>
 
@@ -628,19 +631,10 @@
         <!-- Main grid: Compose | Inbox -->
         <div class="cis-grid">
 
-            <!-- LEFT: Compose & Analyze -->
+            <!-- LEFT: Compose & Send -->
             <div class="cis-card">
-                <div class="card-header"><i class="fas fa-pen-to-square"></i> Compose &amp; Analyze</div>
+                <div class="card-header"><i class="fas fa-pen-to-square"></i> Compose &amp; Send</div>
                 <div class="card-body">
-                    <div class="mode-toggle">
-                        <button class="mode-btn active" id="modeScan" onclick="setMode('scan')">
-                            <i class="fas fa-magnifying-glass"></i> Scan Only
-                        </button>
-                        <button class="mode-btn" id="modeSend" onclick="setMode('send')">
-                            <i class="fas fa-paper-plane"></i> Send + Scan (Local)
-                        </button>
-                    </div>
-
                     <div class="compose-row">
                         <div class="input-group" style="margin-bottom:0">
                             <label>From</label>
@@ -661,36 +655,16 @@
                         <textarea id="mailBody" placeholder="Write email content here...&#10;&#10;Paste URLs to test: https://example.com"></textarea>
                     </div>
                     <div class="input-group" id="attachmentGroup">
-                        <label><i class="fas fa-paperclip" style="color:var(--accent)"></i> Attachment <span style="font-size:0.68rem;color:var(--muted);font-weight:400">(scanned by VirusTotal)</span></label>
+                        <label><i class="fas fa-paperclip" style="color:var(--accent)"></i> Attachment</label>
                         <input type="file" id="mailAttachment" style="color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:100%;box-sizing:border-box;font-size:0.78rem;cursor:pointer;">
                         <div id="attachmentInfo" style="font-size:0.7rem;color:var(--muted);margin-top:4px;"></div>
-                        <div id="vtFileResult" style="display:none;margin-top:6px;padding:7px 10px;border-radius:5px;font-size:0.75rem;font-weight:600;"></div>
                     </div>
 
                     <div class="btn-row">
-                        <button class="btn-primary" id="actionBtn" onclick="handleAction()">
-                            <i class="fas fa-magnifying-glass"></i>
-                            <span id="actionBtnLabel">Scan Email</span>
+                        <button class="btn-primary btn-send" id="actionBtn" onclick="sendEmailNow()">
+                            <i class="fas fa-paper-plane"></i>
+                            <span id="actionBtnLabel">Send Email</span>
                         </button>
-                    </div>
-
-                    <!-- Detection result panel -->
-                    <div id="resultPanel" class="result-panel">
-                        <div class="result-verdict" id="resultVerdict"></div>
-                        <div class="conf-bar-wrap">
-                            <div class="conf-bar-label">
-                                <span>Phishing Probability</span>
-                                <span id="confPct">0%</span>
-                            </div>
-                            <div class="conf-bar-track">
-                                <div class="conf-bar-fill" id="confBarFill" style="width:0%"></div>
-                            </div>
-                        </div>
-                        <div class="feature-grid" id="featGrid"></div>
-                        <div class="rule-adj" id="ruleAdj" style="display:none">
-                            <div class="rule-adj-title"><i class="fas fa-code-branch"></i> Rule Adjustments</div>
-                            <div id="ruleTags"></div>
-                        </div>
                     </div>
 
                     <div id="sendStatus" class="status-msg"></div>
@@ -763,78 +737,17 @@
             </div>
         </div>
 
-        <!-- File Scanner (full-width) -->
-        <div class="cis-card" style="margin-bottom:12px;">
-            <div class="card-header">
-                <i class="fas fa-virus-slash"></i> VirusTotal File Scanner
-                <span style="font-size:0.65rem;color:var(--muted);font-weight:400;margin-left:8px;">Upload any file or document — scanned by 70+ antivirus engines</span>
-            </div>
-            <div class="card-body">
-                <div class="fs-layout">
-                    <!-- Drop zone + file input -->
-                    <div class="fs-drop-zone" id="fsDropZone" onclick="document.getElementById('fsFileInput').click()">
-                        <i class="fas fa-cloud-arrow-up fs-drop-icon"></i>
-                        <div class="fs-drop-label">Click or drag &amp; drop a file here</div>
-                        <div class="fs-drop-sub">PDF, DOCX, EXE, ZIP, images and more</div>
-                        <input type="file" id="fsFileInput" style="display:none">
-                    </div>
-
-                    <!-- File info + scan button -->
-                    <div class="fs-info-col">
-                        <div id="fsFileInfo" class="fs-file-info" style="display:none;">
-                            <div class="fs-file-icon-wrap"><i class="fas fa-file fs-file-icon" id="fsFileIcon"></i></div>
-                            <div class="fs-file-meta">
-                                <div class="fs-file-name" id="fsFileName">—</div>
-                                <div class="fs-file-size" id="fsFileSize">—</div>
-                                <div class="fs-file-hash" id="fsFileHash"></div>
-                            </div>
-                        </div>
-                        <div id="fsNoFile" class="fs-nofile-hint">No file selected</div>
-                        <button class="btn-primary" id="fsScanBtn" onclick="runFileScan()" disabled style="width:100%;margin-top:10px;">
-                            <i class="fas fa-shield-virus"></i> Scan with VirusTotal
-                        </button>
-                        <div id="fsScanStatus" style="margin-top:8px;font-size:0.73rem;"></div>
-                    </div>
-                </div>
-
-                <!-- Result area -->
-                <div id="fsResult" class="fs-result" style="display:none;">
-                    <div class="fs-result-header" id="fsResultHeader"></div>
-                    <div class="fs-stats-row" id="fsStatsRow"></div>
-                    <div class="fs-detail" id="fsDetail"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom row: Domain Intel | Pipeline -->
+        <!-- Bottom row: Pipeline -->
         <div class="bottom-grid">
-
-            <!-- Domain Intelligence -->
-            <div class="cis-card">
-                <div class="card-header"><i class="fas fa-globe"></i> Domain Intelligence</div>
-                <div class="card-body">
-                    <div class="input-group" style="margin-bottom:10px;">
-                        <label>Domain or Email Address</label>
-                        <input type="text" id="domainInput" placeholder="example.com or user@example.com">
-                    </div>
-                    <button class="btn-primary" style="width:100%;" onclick="runDomainCheck()">
-                        <i class="fas fa-search"></i> Check Domain Reputation
-                    </button>
-                    <div id="domainResult" class="domain-result">
-                        <div id="domainResultContent"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Detection Pipeline -->
-            <div class="cis-card">
+            <div class="cis-card" style="grid-column: 1 / -1;">
                 <div class="card-header"><i class="fas fa-diagram-project"></i> Detection Pipeline</div>
                 <div class="card-body">
                     <div class="pipe-row">
                         <div class="pipe-step">
                             <div class="pipe-step-icon" style="color:#60A5FA"><i class="fas fa-envelope-open"></i></div>
                             <div class="pipe-step-label">Email In</div>
-                            <div class="pipe-step-sub">SMTP / Manual</div>
+                            <div class="pipe-step-sub">SMTP · IMAP · Manual</div>
                         </div>
                         <div class="pipe-arrow">→</div>
                         <div class="pipe-step">
@@ -875,7 +788,7 @@
                         <div class="pipe-arrow">→</div>
                         <div class="pipe-step">
                             <div class="pipe-step-icon" style="color:#10B981"><i class="fas fa-chart-line"></i></div>
-                            <div class="pipe-step-label">Dashboard</div>
+                            <div class="pipe-step-label">Alert Feed</div>
                             <div class="pipe-step-sub">Real-time</div>
                         </div>
                     </div>
@@ -883,7 +796,7 @@
             </div>
         </div>
 
-        <footer><i class="fas fa-lock"></i> CatchFish &mdash; Real-time ML Phishing Detection System</footer>
+        <footer><i class="fas fa-diagram-project"></i> Detection Pipeline &mdash; CatchFish Real-time ML Phishing Detection System</footer>
     </div>
 </div>
 
@@ -997,7 +910,6 @@ let activeUser = 'all';
 let activeSearch = '';
 let currentView = 'inbox';
 let localUsers = [];
-let composeMode = 'scan';
 const CACHE_VER = '5';
 const CACHE_MAX = 60000;
 
@@ -1017,90 +929,15 @@ function loadCache() {
     } catch(e){ return []; }
 }
 
-// ── Mode toggle ──────────────────────────────────────────────────────────────
-
-function setMode(mode) {
-    composeMode = mode;
-    document.getElementById('modeScan').classList.toggle('active', mode === 'scan');
-    document.getElementById('modeSend').classList.toggle('active', mode === 'send');
-    const lbl = document.getElementById('actionBtnLabel');
-    const btn = document.getElementById('actionBtn');
-    if (mode === 'send') {
-        lbl.textContent = 'Send & Scan';
-        btn.querySelector('i').className = 'fas fa-paper-plane';
-    } else {
-        lbl.textContent = 'Scan Email';
-        btn.querySelector('i').className = 'fas fa-magnifying-glass';
-        document.getElementById('mailAttachment').value = '';
-        document.getElementById('attachmentInfo').textContent = '';
-        document.getElementById('vtFileResult').style.display = 'none';
-        document.getElementById('vtFileResult').textContent = '';
-    }
-}
-
-// Show file size info and trigger VirusTotal scan when a file is chosen
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('mailAttachment').addEventListener('change', async function() {
+    document.getElementById('mailAttachment').addEventListener('change', function() {
         const info = document.getElementById('attachmentInfo');
-        const vtBox = document.getElementById('vtFileResult');
         if (this.files && this.files[0]) {
             const f = this.files[0];
             const kb = (f.size / 1024).toFixed(1);
             info.textContent = `${f.name}  (${kb} KB)`;
-
-            // Kick off VirusTotal file scan
-            vtBox.style.display = 'block';
-            vtBox.className = 'vt-scanning';
-            vtBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning with VirusTotal… (up to ~90 s for new files)';
-
-            try {
-                const b64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result.split(',')[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(f);
-                });
-
-                const resp = await fetchJSON('/api/scan-file', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({file_b64: b64, file_name: f.name, file_mime: f.type || 'application/octet-stream'})
-                });
-
-                if (resp.error) {
-                    vtBox.className = 'vt-error';
-                    vtBox.innerHTML = `<i class="fas fa-circle-exclamation"></i> VT scan error: ${escHtml(resp.error)}`;
-                    return;
-                }
-
-                const stats = resp.stats || {};
-                const malicious  = stats.malicious  || 0;
-                const suspicious = stats.suspicious  || 0;
-                const clean      = stats.harmless    || stats.clean || 0;
-                const undetected = stats.undetected  || 0;
-
-                const cached = resp.source === 'cached' ? ' <span style="opacity:.7;font-weight:400">(cached result)</span>' : '';
-                if (resp.verdict === 'malicious') {
-                    vtBox.className = 'vt-malicious';
-                    vtBox.innerHTML = `<i class="fas fa-triangle-exclamation"></i> DANGEROUS FILE — VirusTotal: ${malicious} engine(s) flagged <strong>MALICIOUS</strong>. Do not send!${cached}`;
-                } else if (resp.verdict === 'suspicious') {
-                    vtBox.className = 'vt-suspicious';
-                    vtBox.innerHTML = `<i class="fas fa-circle-exclamation"></i> WARNING — VirusTotal: ${suspicious} engine(s) flagged <strong>suspicious</strong>. Proceed with caution.${cached}`;
-                } else if (resp.verdict === 'clean') {
-                    vtBox.className = 'vt-clean';
-                    vtBox.innerHTML = `<i class="fas fa-shield-check"></i> File appears clean — ${clean} engine(s) harmless, ${undetected} undetected.${cached}`;
-                } else {
-                    vtBox.className = 'vt-unknown';
-                    vtBox.innerHTML = `<i class="fas fa-circle-question"></i> VT analysis timed out — file submitted, check VirusTotal manually.`;
-                }
-            } catch(e) {
-                vtBox.className = 'vt-error';
-                vtBox.innerHTML = `<i class="fas fa-circle-exclamation"></i> VT scan failed: ${escHtml(e.message)}`;
-            }
         } else {
             info.textContent = '';
-            vtBox.style.display = 'none';
-            vtBox.textContent = '';
         }
     });
 });
@@ -1189,161 +1026,55 @@ async function addLocalUser() {
     } catch(e) { alert('Error: ' + e.message); }
 }
 
-// ── Action (scan or send) ────────────────────────────────────────────────────
+// ── Action (send local email) ───────────────────────────────────────────────
 
-async function handleAction() {
+async function sendEmailNow() {
     const from = document.getElementById('fromAddress').value.trim();
     const to   = document.getElementById('toAddress').value.trim();
     const subj = document.getElementById('mailSubject').value.trim();
     const body = document.getElementById('mailBody').value;
     const stat = document.getElementById('sendStatus');
-    const rp   = document.getElementById('resultPanel');
 
     const fileInput = document.getElementById('mailAttachment');
     const attachedFile = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
 
-    if (!body && !subj) {
-        stat.innerHTML = '<span style="color:#F08080">Please enter a subject or body.</span>';
+    if (!from) { stat.innerHTML = '<span style="color:#F08080">Select a From address to send.</span>'; return; }
+    if (!to)   { stat.innerHTML = '<span style="color:#F08080">Enter a To address to send.</span>'; return; }
+    if (!body && !subj && !attachedFile) {
+        stat.innerHTML = '<span style="color:#F08080">Please enter message content or add an attachment.</span>';
         return;
     }
 
-    stat.innerHTML = '<span style="color:#93C5FD"><i class="fas fa-spinner fa-spin"></i> Analyzing...</span>';
-    rp.className = 'result-panel';
+    stat.innerHTML = '<span style="color:#93C5FD"><i class="fas fa-spinner fa-spin"></i> Sending...</span>';
 
     try {
-        // Always scan first
-        const result = await fetchJSON('/predict', {
+        const sendPayload = { from_address: from, to_address: to, subject: subj, body };
+
+        if (attachedFile) {
+            const b64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(attachedFile);
+            });
+            sendPayload.attachment_b64   = b64;
+            sendPayload.attachment_name  = attachedFile.name;
+            sendPayload.attachment_mime  = attachedFile.type || 'application/octet-stream';
+        }
+
+        await fetchJSON('/api/send-local', {
             method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({
-                email_text: body, subject: subj,
-                sender_domain: senderDomain(from),
-                has_attachment: attachedFile ? 1 : 0,
-            })
+            body: JSON.stringify(sendPayload)
         });
 
-        showResultPanel(result);
-
-        // If send mode, also transmit via local SMTP
-        if (composeMode === 'send') {
-            if (!from) { stat.innerHTML = '<span style="color:#F08080">Select a From address to send.</span>'; return; }
-            if (!to)   { stat.innerHTML = '<span style="color:#F08080">Enter a To address to send.</span>'; return; }
-
-            const sendPayload = { from_address: from, to_address: to, subject: subj, body };
-
-            if (attachedFile) {
-                const b64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result.split(',')[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(attachedFile);
-                });
-                sendPayload.attachment_b64   = b64;
-                sendPayload.attachment_name  = attachedFile.name;
-                sendPayload.attachment_mime  = attachedFile.type || 'application/octet-stream';
-            }
-
-            await fetchJSON('/api/send-local', {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify(sendPayload)
-            });
-
-            const attachNote = attachedFile ? ` with attachment <strong>${escHtml(attachedFile.name)}</strong>` : '';
-            stat.innerHTML = `<span style="color:#5AE8B4"><i class="fas fa-check-circle"></i> Sent to <strong>${escHtml(to)}</strong>${attachNote} via Local SMTP. Email scanned.</span>`;
-            fileInput.value = '';
-            document.getElementById('attachmentInfo').textContent = '';
-            document.getElementById('vtFileResult').style.display = 'none';
-            setTimeout(() => refreshInbox(true), 1200);
-        } else {
-            const verdict = result.prediction === 'phishing' ? '⚠ Phishing Detected' : '✓ Legitimate';
-            stat.innerHTML = `<span style="color:${result.prediction==='phishing'?'#F08080':'#5AE8B4'}">${verdict} (${(result.probability*100).toFixed(1)}%)</span>`;
-        }
+        const attachNote = attachedFile ? ` with attachment <strong>${escHtml(attachedFile.name)}</strong>` : '';
+        stat.innerHTML = `<span style="color:#5AE8B4"><i class="fas fa-check-circle"></i> Sent to <strong>${escHtml(to)}</strong>${attachNote} via Local SMTP.</span>`;
+        fileInput.value = '';
+        document.getElementById('attachmentInfo').textContent = '';
+        setTimeout(() => refreshInbox(true), 1200);
     } catch(e) {
         stat.innerHTML = `<span style="color:#F08080"><i class="fas fa-exclamation-triangle"></i> ${escHtml(e.message)}</span>`;
-        rp.className = 'result-panel';
     }
-}
-
-function showResultPanel(result) {
-    const rp = document.getElementById('resultPanel');
-    const isPhish = result.prediction === 'phishing';
-    rp.className = `result-panel show ${isPhish ? 'phishing' : 'legitimate'}`;
-
-    document.getElementById('resultVerdict').innerHTML = isPhish
-        ? '<i class="fas fa-triangle-exclamation" style="color:#C93030"></i> <span style="color:#F08080">PHISHING DETECTED</span>'
-        : '<i class="fas fa-shield-check" style="color:#0D9E74"></i> <span style="color:#5AE8B4">Legitimate Email</span>';
-
-    const prob = result.probability || 0;
-    const pct = (prob * 100).toFixed(1);
-    document.getElementById('confPct').textContent = pct + '%';
-    const fill = document.getElementById('confBarFill');
-    fill.style.width = pct + '%';
-    fill.className = `conf-bar-fill ${isPhish ? 'phishing' : 'legitimate'}`;
-
-    document.getElementById('featGrid').innerHTML = renderBreakdown(result.features_used);
-
-    const rules = result.rule_adjustments || [];
-    const ruleDiv = document.getElementById('ruleAdj');
-    if (rules.length) {
-        ruleDiv.style.display = 'block';
-        document.getElementById('ruleTags').innerHTML = rules.map(r =>
-            `<span class="rule-tag"><i class="fas fa-circle-info"></i> ${escHtml(r)}</span>`
-        ).join('');
-    } else {
-        ruleDiv.style.display = 'none';
-    }
-}
-
-// ── Domain reputation check ──────────────────────────────────────────────────
-
-function runDomainCheck() {
-    const inp = document.getElementById('domainInput');
-    const val = (inp ? inp.value : '').trim();
-    const domain = senderDomain(val) || val;
-    if (!domain) { alert('Enter a domain or email address.'); return; }
-    checkDomainReputation(domain);
-}
-
-async function checkDomainFromForm() {
-    const from = document.getElementById('fromAddress').value.trim();
-    const domain = senderDomain(from) || from;
-    if (!domain) { alert('Select or enter a From address first.'); return; }
-    await checkDomainReputation(domain);
-}
-
-async function checkDomainReputation(domain) {
-    const el = document.getElementById('domainResult');
-    const cont = document.getElementById('domainResultContent');
-    el.className = 'domain-result show medium';
-    cont.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Checking <strong>${escHtml(domain)}</strong>...`;
-    try {
-        const r = await fetchJSON('/api/domain-reputation', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({domain})
-        });
-        el.className = `domain-result show ${r.risk_level}`;
-        const color = r.risk_level==='low' ? '#0D9E74' : r.risk_level==='medium' ? '#C97B20' : '#C93030';
-        const fillColor = color;
-        cont.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <span style="font-weight:600;font-family:var(--mono);font-size:0.85rem">${escHtml(r.main_domain)}</span>
-                <span style="font-weight:700;color:${color};font-size:0.75rem">${r.risk_level.toUpperCase()} RISK (${r.risk_score}/100)</span>
-            </div>
-            <div class="risk-score-bar"><div class="risk-score-fill" style="width:${r.risk_score}%;background:${fillColor}"></div></div>
-            ${r.risk_flags.length ? '<div style="font-size:0.68rem;color:var(--muted2);margin-top:5px;">Flags: ' + r.risk_flags.map(f=>`<span style="margin-right:8px">▸ ${escHtml(f)}</span>`).join('') + '</div>' : ''}
-            ${r.virustotal ? renderVT(r.virustotal) : ''}
-        `;
-    } catch(e) {
-        el.className = 'domain-result show medium';
-        cont.innerHTML = `<span style="color:#F08080">Error: ${escHtml(e.message)}</span>`;
-    }
-}
-
-function renderVT(vt) {
-    if (vt.error) return `<div style="font-size:0.67rem;color:var(--muted);margin-top:4px;">VirusTotal: ${escHtml(vt.error)}</div>`;
-    return `<div style="font-size:0.69rem;margin-top:6px;color:var(--muted2);">VirusTotal:
-        <span style="color:#F08080">Malicious: ${vt.malicious}</span> ·
-        <span style="color:#FBBF24">Suspicious: ${vt.suspicious}</span> ·
-        <span style="color:#5AE8B4">Clean: ${vt.clean}</span></div>`;
 }
 
 // ── Inbox data ────────────────────────────────────────────────────────────────
@@ -1559,6 +1290,12 @@ document.getElementById('themeToggle').addEventListener('click', () => {
     applyTheme(next);
 });
 
+window.addEventListener('storage', (event) => {
+    if (event.key === 'sjTheme') {
+        applyTheme(event.newValue || 'dark');
+    }
+});
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 applyTheme(localStorage.getItem('sjTheme') || 'dark');
@@ -1573,185 +1310,6 @@ fetchJSON('/api/model-info').then(info => {
     if (el && info.model_name) el.textContent = info.model_name;
 }).catch(() => {});
 
-// ── File Scanner ─────────────────────────────────────────────────────────────
-
-(function() {
-    let fsSelectedFile = null;
-
-    // Icon mapping by extension
-    const EXT_ICONS = {
-        pdf: 'fa-file-pdf', doc: 'fa-file-word', docx: 'fa-file-word',
-        xls: 'fa-file-excel', xlsx: 'fa-file-excel',
-        ppt: 'fa-file-powerpoint', pptx: 'fa-file-powerpoint',
-        zip: 'fa-file-zipper', rar: 'fa-file-zipper', '7z': 'fa-file-zipper',
-        tar: 'fa-file-zipper', gz: 'fa-file-zipper',
-        exe: 'fa-file-code', dll: 'fa-file-code', sh: 'fa-file-code',
-        bat: 'fa-file-code', ps1: 'fa-file-code', js: 'fa-file-code',
-        py: 'fa-file-code', html: 'fa-file-code', htm: 'fa-file-code',
-        png: 'fa-file-image', jpg: 'fa-file-image', jpeg: 'fa-file-image',
-        gif: 'fa-file-image', svg: 'fa-file-image', webp: 'fa-file-image',
-        txt: 'fa-file-lines', csv: 'fa-file-lines', log: 'fa-file-lines',
-        mp4: 'fa-file-video', avi: 'fa-file-video', mov: 'fa-file-video',
-        mp3: 'fa-file-audio', wav: 'fa-file-audio',
-    };
-
-    function getExtIcon(name) {
-        const ext = (name.split('.').pop() || '').toLowerCase();
-        return EXT_ICONS[ext] || 'fa-file';
-    }
-
-    async function sha256hex(buffer) {
-        const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
-
-    function formatBytes(n) {
-        if (n < 1024)       return n + ' B';
-        if (n < 1048576)    return (n/1024).toFixed(1) + ' KB';
-        return (n/1048576).toFixed(2) + ' MB';
-    }
-
-    async function setFile(file) {
-        fsSelectedFile = file;
-        document.getElementById('fsNoFile').style.display = 'none';
-        document.getElementById('fsFileInfo').style.display = 'flex';
-        document.getElementById('fsFileName').textContent = file.name;
-        document.getElementById('fsFileSize').textContent = formatBytes(file.size);
-        document.getElementById('fsFileHash').textContent = 'Computing SHA-256…';
-        document.getElementById('fsScanBtn').disabled = false;
-        document.getElementById('fsFileIcon').className = `fas ${getExtIcon(file.name)} fs-file-icon`;
-        document.getElementById('fsResult').style.display = 'none';
-        document.getElementById('fsScanStatus').innerHTML = '';
-        // compute hash in browser
-        const buf = await file.arrayBuffer();
-        const hash = await sha256hex(buf);
-        document.getElementById('fsFileHash').textContent = 'SHA-256: ' + hash;
-    }
-
-    // File input change
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('fsFileInput').addEventListener('change', function() {
-            if (this.files && this.files[0]) setFile(this.files[0]);
-        });
-
-        // Drag-and-drop
-        const zone = document.getElementById('fsDropZone');
-        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-        zone.addEventListener('drop', e => {
-            e.preventDefault();
-            zone.classList.remove('dragover');
-            const f = e.dataTransfer.files[0];
-            if (f) setFile(f);
-        });
-    });
-
-    window.runFileScan = async function() {
-        if (!fsSelectedFile) return;
-        const btn    = document.getElementById('fsScanBtn');
-        const status = document.getElementById('fsScanStatus');
-        const result = document.getElementById('fsResult');
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning…';
-        status.innerHTML = '<span style="color:var(--muted)"><i class="fas fa-spinner fa-spin"></i> Checking VirusTotal… (cached files return instantly, new files up to ~90 s)</span>';
-        result.style.display = 'none';
-
-        try {
-            const b64 = await new Promise((res, rej) => {
-                const reader = new FileReader();
-                reader.onload = e => res(e.target.result.split(',')[1]);
-                reader.onerror = rej;
-                reader.readAsDataURL(fsSelectedFile);
-            });
-
-            const resp = await fetchJSON('/api/scan-file', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    file_b64:  b64,
-                    file_name: fsSelectedFile.name,
-                    file_mime: fsSelectedFile.type || 'application/octet-stream',
-                })
-            });
-
-            btn.innerHTML = '<i class="fas fa-shield-virus"></i> Scan with VirusTotal';
-            btn.disabled = false;
-
-            if (resp.error) {
-                status.innerHTML = `<span style="color:#F08080"><i class="fas fa-circle-exclamation"></i> ${escHtml(resp.error)}</span>`;
-                return;
-            }
-
-            status.innerHTML = '';
-            renderFsResult(resp);
-
-        } catch(e) {
-            btn.innerHTML = '<i class="fas fa-shield-virus"></i> Scan with VirusTotal';
-            btn.disabled = false;
-            status.innerHTML = `<span style="color:#F08080"><i class="fas fa-circle-exclamation"></i> ${escHtml(e.message)}</span>`;
-        }
-    };
-
-    function renderFsResult(resp) {
-        const result  = document.getElementById('fsResult');
-        const header  = document.getElementById('fsResultHeader');
-        const statsRow= document.getElementById('fsStatsRow');
-        const detail  = document.getElementById('fsDetail');
-
-        const stats      = resp.stats || {};
-        const malicious  = stats.malicious  || 0;
-        const suspicious = stats.suspicious || 0;
-        const harmless   = stats.harmless   || 0;
-        const undetected = stats.undetected || 0;
-        const total      = malicious + suspicious + harmless + undetected;
-        const verdict    = resp.verdict || 'unknown';
-        const cached     = resp.source === 'cached';
-
-        // Header
-        const icons = { malicious:'fa-triangle-exclamation', suspicious:'fa-circle-exclamation', clean:'fa-shield-check', unknown:'fa-circle-question' };
-        const labels= { malicious:'DANGEROUS — Malware Detected', suspicious:'WARNING — Suspicious File', clean:'File Appears Clean', unknown:'Analysis Inconclusive' };
-        header.className = `fs-result-header ${verdict === 'clean' ? 'clean' : verdict}`;
-        header.innerHTML = `<i class="fas ${icons[verdict]||'fa-circle-question'}"></i> ${labels[verdict]||'Unknown'}` +
-            (cached ? ' <span style="font-size:.65rem;font-weight:400;opacity:.7">(cached report)</span>' : '');
-
-        // Stats row
-        statsRow.innerHTML = `
-            <div class="fs-stat">
-                <div class="fs-stat-val red">${malicious}</div>
-                <div class="fs-stat-lbl">Malicious</div>
-            </div>
-            <div class="fs-stat">
-                <div class="fs-stat-val orange">${suspicious}</div>
-                <div class="fs-stat-lbl">Suspicious</div>
-            </div>
-            <div class="fs-stat">
-                <div class="fs-stat-val green">${harmless}</div>
-                <div class="fs-stat-lbl">Harmless</div>
-            </div>
-            <div class="fs-stat">
-                <div class="fs-stat-val muted">${undetected}</div>
-                <div class="fs-stat-lbl">Undetected</div>
-            </div>
-            <div class="fs-stat">
-                <div class="fs-stat-val muted">${total}</div>
-                <div class="fs-stat-lbl">Total Engines</div>
-            </div>`;
-
-        // Detail
-        const sha = resp.sha256 ? `<span style="font-family:var(--mono);font-size:.65rem">${escHtml(resp.sha256)}</span>` : '—';
-        const detectionRate = total > 0 ? `${malicious}/${total} engines flagged this file` : 'No engine data';
-        detail.innerHTML = `
-            <div style="display:flex;flex-wrap:wrap;gap:14px;">
-                <div><strong>File:</strong> ${escHtml(resp.file_name || '—')}</div>
-                <div><strong>SHA-256:</strong> ${sha}</div>
-                <div><strong>Detection:</strong> ${detectionRate}</div>
-                ${resp.analysis_id ? `<div><strong>Analysis ID:</strong> <span style="font-family:var(--mono);font-size:.65rem">${escHtml(resp.analysis_id)}</span></div>` : ''}
-            </div>`;
-
-        result.style.display = 'block';
-    }
-})();
 </script>
 </body>
 </html>

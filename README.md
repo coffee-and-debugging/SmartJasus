@@ -461,6 +461,13 @@ LOCAL_SMTP_PORT=1025
 APP_HOST=0.0.0.0
 APP_PORT=5000
 
+VIRUSTOTAL_API_KEY=your_virustotal_api_key
+
+# Have I Been Pwned (HIBP) for password breach checker
+HIBP_API_KEY=your_hibp_api_key
+HIBP_USER_AGENT=CatchFish/1.0 (contact: your_email@example.com)
+HIBP_PASSWORDS_API_URL=https://api.pwnedpasswords.com/range
+
 PHISHING_THRESHOLD=0.60
 AUTO_SYNC_ON_START=false
 ```

@@ -56,6 +56,7 @@ AUTO_SYNC_ON_START = os.getenv("AUTO_SYNC_ON_START", "false").lower() == "true"
 APP_HOST = os.getenv("APP_HOST", "0.0.0.0").strip()
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "").strip()
+HIBP_PASSWORDS_API_URL = os.getenv("HIBP_PASSWORDS_API_URL", "https://api.pwnedpasswords.com/range").strip().rstrip("/")
 PHISHING_THRESHOLD = float(os.getenv("PHISHING_THRESHOLD", "0.60"))
 TRUSTED_DOMAIN_REDUCTION = float(os.getenv("TRUSTED_DOMAIN_REDUCTION", "0.18"))
 
@@ -459,6 +460,21 @@ def mail_dashboard():
     return render_template("mail_dashboard.html", default_from_address=EMAIL_ADDRESS)
 
 
+@app.route("/virustotal-file-scanner")
+def virustotal_file_scanner():
+    return render_template("virustotal_file_scanner.html")
+
+
+@app.route("/domain-intelligence")
+def domain_intelligence_page():
+    return render_template("domain_intelligence.html")
+
+
+@app.route("/password-breach-checker")
+def password_breach_checker_page():
+    return render_template("password_breach_checker.html")
+
+
 @app.route("/web-icon.png")
 def web_icon():
     return send_from_directory("templates", "icon.png")
@@ -762,6 +778,75 @@ def domain_reputation():
             result["virustotal"] = {"error": str(vt_err)}
 
     return jsonify(result)
+
+
+@app.route("/api/password-breach-check", methods=["POST"])
+def password_breach_check():
+    """
+    Check password exposure using Have I Been Pwned Pwned Passwords API (k-anonymity).
+    Only the first 5 chars of SHA-1 are sent to the remote API.
+    """
+    data = request.get_json() or {}
+    password = data.get("password", "")
+    if not isinstance(password, str) or not password:
+        return jsonify({"error": "password is required"}), 400
+
+    try:
+        import hashlib
+        import requests as req_lib
+
+        sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+        prefix, suffix = sha1[:5], sha1[5:]
+
+        hibp_headers = {
+            "Add-Padding": "true",
+            "User-Agent": "CatchFish/1.0",
+        }
+
+        resp = req_lib.get(
+            f"{HIBP_PASSWORDS_API_URL}/{prefix}",
+            headers=hibp_headers,
+            timeout=20,
+        )
+        if resp.status_code != 200:
+            return jsonify({"error": f"HIBP API returned HTTP {resp.status_code}"}), 502
+
+        breach_count = 0
+        for line in resp.text.splitlines():
+            if ":" not in line:
+                continue
+            hash_suffix, count = line.split(":", 1)
+            if hash_suffix.strip().upper() == suffix:
+                try:
+                    breach_count = int(count.strip())
+                except ValueError:
+                    breach_count = 0
+                break
+
+        breached = breach_count > 0
+        if not breached:
+            severity = "safe"
+            message = "No breach record found for this password in HIBP dataset."
+            recommendation = "Continue using strong unique passwords and MFA."
+        elif breach_count < 100:
+            severity = "medium"
+            message = "Password was found in breach datasets."
+            recommendation = "Change password now and avoid reuse across services."
+        else:
+            severity = "high"
+            message = "Password was exposed many times in known breaches."
+            recommendation = "Immediately change password and rotate any reused credentials."
+
+        return jsonify({
+            "breached": breached,
+            "breach_count": breach_count,
+            "severity": severity,
+            "message": message,
+            "recommendation": recommendation,
+            "source": "Have I Been Pwned - Pwned Passwords",
+        })
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── File Scan (VirusTotal) ─────────────────────────────────────────────────────
