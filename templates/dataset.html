@@ -115,6 +115,13 @@
         .schema-desc { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
         .schema-cols  { font-size: 0.62rem; color: var(--accent); margin-top: 4px; font-family: var(--mono); }
 
+        /* Preprocessing pipeline blocks */
+        .pipe-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; }
+        .pipe-block-title { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .pipe-block-body { font-size: 0.72rem; color: var(--muted2); line-height: 1.5; }
+        .pipe-block-body strong { color: var(--text); }
+        .pipe-block-code { font-family: var(--mono); color: var(--accent); }
+
         /* Light mode */
         body.light-mode { background: #EEF2F8; color: #1A2535; }
         body.light-mode .cis-sidebar, body.light-mode .top-navbar { background: #FFFFFF; border-color: #CCDAE8; }
@@ -139,8 +146,27 @@
         body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
         body.light-mode .theme-toggle .tt-icon.tt-sun  { color: #D97706; }
         body.light-mode .donut-label { color: #334155; }
+        body.light-mode .donut-val { color: #0F172A; }
+        body.light-mode .stat-label { color: #4A607A; }
+        body.light-mode .card-header { color: #1E293B; }
+        body.light-mode .page-title { color: #1E293B; }
+        body.light-mode .nav-section { color: #64748B; }
+        body.light-mode .logo-sub { color: #64748B; }
+        body.light-mode .logo-text { color: #0F172A; }
+        body.light-mode .logo-area { border-bottom-color: #CCDAE8; }
+        body.light-mode .ds-name { color: #0F172A; }
+        body.light-mode .schema-name { color: #1E293B; }
+        body.light-mode .schema-desc { color: #4A607A; }
+        body.light-mode .split-bar-name { color: #1E293B; }
+        body.light-mode .split-bar-pct { color: #64748B; }
+        body.light-mode .split-bar-section-label { color: #64748B !important; }
+        /* Preprocessing pipeline */
+        body.light-mode .pipe-block { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .pipe-block-body { color: #334155; }
+        body.light-mode .pipe-block-body strong { color: #0F172A; }
+        body.light-mode .pipe-block-code { color: #1D4ED8; }
         footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
-        body.light-mode footer { border-top-color: #CCDAE8; }
+        body.light-mode footer { border-top-color: #CCDAE8; color: #4A607A; }
 
         @media (max-width: 1100px) {
             .main-grid, .bottom-grid { grid-template-columns: 1fr; }
@@ -159,19 +185,25 @@
             <div class="logo-icon"><img src="/web-icon.png" alt="CatchFish"></div>
             <div class="logo-text">CatchFish<span class="logo-sub">Phishing Detection</span></div>
         </div>
-        <div class="nav-section">Navigation</div>
+        <div class="nav-section">Overview</div>
         <div class="nav-menu">
-            <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>SOC Overview</span></a>
+            <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
+        </div>
+        <div class="nav-section">Security Intelligence</div>
+        <div class="nav-menu">
             <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
             <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
             <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
-            <a href="/mail-dashboard" class="nav-item"><i class="fas fa-envelope-open-text"></i><span>Mail Console</span></a>
         </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
             <a href="/dataset" class="nav-item active"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
             <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
+        </div>
+        <div class="nav-section">Console</div>
+        <div class="nav-menu">
+            <a href="/mail-dashboard" class="nav-item"><i class="fas fa-envelope-open-text"></i><span>Mail Dashboard</span></a>
         </div>
     </div>
 
@@ -277,7 +309,7 @@
 
                     <!-- Per-dataset stacked bars -->
                     <div style="margin-top:14px">
-                        <div style="font-size:0.57rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:9px">Rows per Dataset</div>
+                        <div class="split-bar-section-label" style="font-size:0.57rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:9px">Rows per Dataset</div>
                         <div class="split-bar-list" id="splitBarList"></div>
                     </div>
                 </div>
@@ -293,7 +325,7 @@
                     <div class="schema-grid">
                         <div class="schema-item">
                             <div class="schema-name">Schema A — Original Format</div>
-                            <div class="schema-desc">Used by Enron, Ling, Nazario, SpamAssassin, Nigerian Fraud and similar raw dumps. Body text is in a <code style="font-family:var(--mono);color:var(--accent)">body</code> column; sender extracted from a <code style="font-family:var(--mono);color:var(--accent)">sender</code> field.</div>
+                            <div class="schema-desc">Used by Enron, Ling, Nazario, SpamAssassin, Nigerian Fraud and similar raw dumps. Body text is in a <code class="pipe-block-code" style="font-family:var(--mono)">body</code> column; sender extracted from a <code class="pipe-block-code" style="font-family:var(--mono)">sender</code> field.</div>
                             <div class="schema-cols">columns: sender · body · subject · label</div>
                         </div>
                         <div class="schema-item">
@@ -319,21 +351,21 @@
                 <div class="card-header"><i class="fas fa-gears"></i> Preprocessing Pipeline</div>
                 <div class="card-body">
                     <div style="display:flex;flex-direction:column;gap:8px">
-                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
-                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#60A5FA;margin-bottom:5px"><i class="fas fa-font" style="margin-right:5px"></i>Text Vectorisation — HashingVectorizer</div>
-                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">Applied to <strong style="color:var(--text)">email_text</strong> and <strong style="color:var(--text)">subject</strong>. Uses 2¹⁶ = 65 536 hash buckets, unigrams + bigrams, English stop-word removal. No vocabulary storage — stateless and memory-efficient.</div>
+                        <div class="pipe-block">
+                            <div class="pipe-block-title" style="color:#60A5FA"><i class="fas fa-font" style="margin-right:5px"></i>Text Vectorisation — HashingVectorizer</div>
+                            <div class="pipe-block-body">Applied to <strong>email_text</strong> and <strong>subject</strong>. Uses 2¹⁶ = 65 536 hash buckets, unigrams + bigrams, English stop-word removal. No vocabulary storage — stateless and memory-efficient.</div>
                         </div>
-                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
-                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#A78BFA;margin-bottom:5px"><i class="fas fa-at" style="margin-right:5px"></i>Domain Vectorisation — HashingVectorizer</div>
-                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">Applied to <strong style="color:var(--text)">sender_domain</strong> with 512 buckets — small enough to not dominate but sufficient to encode domain patterns (TLD, depth, hyphenation).</div>
+                        <div class="pipe-block">
+                            <div class="pipe-block-title" style="color:#A78BFA"><i class="fas fa-at" style="margin-right:5px"></i>Domain Vectorisation — HashingVectorizer</div>
+                            <div class="pipe-block-body">Applied to <strong>sender_domain</strong> with 512 buckets — small enough to not dominate but sufficient to encode domain patterns (TLD, depth, hyphenation).</div>
                         </div>
-                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
-                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#34D399;margin-bottom:5px"><i class="fas fa-sliders" style="margin-right:5px"></i>Numeric Scaling — StandardScaler</div>
-                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">All 19 engineered numeric features are zero-mean unit-variance scaled. This prevents large-magnitude features (e.g. email_length) from dominating gradient updates in linear and boosting models.</div>
+                        <div class="pipe-block">
+                            <div class="pipe-block-title" style="color:#34D399"><i class="fas fa-sliders" style="margin-right:5px"></i>Numeric Scaling — StandardScaler</div>
+                            <div class="pipe-block-body">All 19 engineered numeric features are zero-mean unit-variance scaled. This prevents large-magnitude features (e.g. email_length) from dominating gradient updates in linear and boosting models.</div>
                         </div>
-                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
-                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#FBBF24;margin-bottom:5px"><i class="fas fa-weight-hanging" style="margin-right:5px"></i>Class Imbalance Handling</div>
-                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">Sample weights applied for Gradient Boosting and XGBoost. Tree-based models use <code style="font-family:var(--mono);color:var(--accent)">class_weight="balanced"</code>. Logistic Regression likewise. Prevents models from defaulting to the majority class.</div>
+                        <div class="pipe-block">
+                            <div class="pipe-block-title" style="color:#FBBF24"><i class="fas fa-weight-hanging" style="margin-right:5px"></i>Class Imbalance Handling</div>
+                            <div class="pipe-block-body">Sample weights applied for Gradient Boosting and XGBoost. Tree-based models use <code class="pipe-block-code">class_weight="balanced"</code>. Logistic Regression likewise. Prevents models from defaulting to the majority class.</div>
                         </div>
                     </div>
                 </div>
@@ -370,6 +402,9 @@
     }
     window.addEventListener('storage', e => { if (e.key === 'sjTheme') applyTheme(e.newValue || 'dark'); });
     initTheme();
+    document.querySelectorAll('.nav-item.active').forEach(el => {
+        el.addEventListener('click', e => e.preventDefault());
+    });
 
     // ── Dataset metadata from /api/model-info ────────────────────────────────
     const KNOWN_STATS = {
