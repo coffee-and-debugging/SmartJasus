@@ -171,12 +171,21 @@
         }
 
         /* ── Threat feed ─────────────────────────────────────────── */
-        .threat-feed { max-height: 430px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .threat-feed { max-height: 525px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
 
         .threat-item {
             background: var(--surface2); border: 1px solid var(--border);
             border-radius: 4px; padding: 10px 12px; cursor: pointer;
             transition: border-color 0.1s; border-left: 3px solid transparent;
+        }
+        .threat-item.feed-animate {
+            opacity: 0;
+            transform: translateY(8px);
+            animation: threatReveal 0.32s ease forwards;
+        }
+        @keyframes threatReveal {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .threat-item:hover { border-color: var(--border2); }
         .threat-item.phish { border-left-color: var(--red); background: rgba(201,48,48,0.04); }
@@ -676,13 +685,14 @@
             return;
         }
 
-        liveContainer.innerHTML = filteredItems.map(a => {
+        liveContainer.innerHTML = filteredItems.map((a, idx) => {
             const isPhish = a.prediction === 'phishing';
             const prob = (Number(a.probability || 0) * 100).toFixed(1);
             const itemId = getStableThreatId(a);
             const dt = a.received_at ? new Date(a.received_at).toLocaleString() : '—';
+            const delayMs = Math.min(idx * 40, 320);
 
-            return `<div class="threat-item ${isPhish ? 'phish' : 'safe'}" data-item-id="${itemId}">
+            return `<div class="threat-item feed-animate ${isPhish ? 'phish' : 'safe'}" data-item-id="${itemId}" style="animation-delay:${delayMs}ms">
                 <div class="item-top">
                     <span class="badge ${isPhish ? 'badge-phish' : 'badge-safe'}">${isPhish ? '⚠ Phishing' : '✓ Safe'}</span>
                     <span style="font-size:0.63rem;color:var(--muted);font-family:var(--mono)">${prob}%</span>
