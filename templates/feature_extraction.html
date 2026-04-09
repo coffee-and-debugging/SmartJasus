@@ -135,21 +135,6 @@
         .cat-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
         .feat-card.hidden { display: none; }
 
-        /* Feature filter */
-        .feature-filter-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-        .feature-filter-wrap { display: inline-flex; align-items: center; gap: 8px; }
-        .feature-filter-label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 600; }
-        .feature-filter-select {
-            background: var(--surface2);
-            color: var(--text);
-            border: 1px solid var(--border2);
-            border-radius: 4px;
-            font-size: 0.7rem;
-            padding: 5px 8px;
-            min-width: 170px;
-            outline: none;
-        }
-        .feature-filter-select:focus { border-color: var(--accent); }
         .filter-count { font-size: 0.64rem; color: var(--muted2); font-family: var(--mono); }
 
         /* Light mode */
@@ -187,8 +172,6 @@
         body.light-mode .cat-pill.domain { background: rgba(180,83,9,0.1); color: #B45309; border-color: rgba(180,83,9,0.3); }
         body.light-mode .cat-pill.structure { background: rgba(109,40,217,0.1); color: #6D28D9; border-color: rgba(109,40,217,0.3); }
         body.light-mode .cat-pill.semantic { background: rgba(185,28,28,0.1); color: #B91C1C; border-color: rgba(185,28,28,0.3); }
-        body.light-mode .feature-filter-label { color: #475569; }
-        body.light-mode .feature-filter-select { background: #F8FAFC; color: #0F172A; border-color: #B5C8DC; }
         body.light-mode .filter-count { color: #475569; }
         body.light-mode .rule-code { color: #1D4ED8; }
         body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
@@ -205,7 +188,6 @@
             .stats-row { grid-template-columns: repeat(2, 1fr); }
             .feat-grid { grid-template-columns: 1fr 1fr; }
         }
-        @media (max-width: 700px) { .feature-filter-row { flex-direction: column; align-items: flex-start; } }
         @media (max-width: 700px) { .feat-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -222,17 +204,17 @@
         <div class="nav-menu">
             <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
         </div>
-        <div class="nav-section">Security Intelligence</div>
-        <div class="nav-menu">
-            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
-            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
-            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
-        </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
             <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item active"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
             <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
+        </div>
+        <div class="nav-section">Security Intelligence</div>
+        <div class="nav-menu">
+            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
+            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
+            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
         </div>
         <div class="nav-section">Console</div>
         <div class="nav-menu">
@@ -279,20 +261,6 @@
         <div class="cis-card full-card">
             <div class="card-header"><i class="fas fa-layer-group"></i> All Extracted Features</div>
             <div class="card-body">
-                <div class="feature-filter-row">
-                    <div class="feature-filter-wrap">
-                        <label class="feature-filter-label" for="featureFilter">Filter by Category</label>
-                        <select id="featureFilter" class="feature-filter-select">
-                            <option value="all">All Features</option>
-                            <option value="text">Text / Content</option>
-                            <option value="url">URL Analysis</option>
-                            <option value="domain">Domain</option>
-                            <option value="structure">Structure</option>
-                            <option value="semantic">Semantic / Urgency</option>
-                        </select>
-                    </div>
-                    <div class="filter-count" id="filterCount">Showing 19 of 19</div>
-                </div>
                 <div class="cat-legend">
                     <div class="cat-pill all active" data-cat="all"><span class="cat-dot"></span> All</div>
                     <div class="cat-pill text" data-cat="text"><span class="cat-dot"></span> Text / Content</div>
@@ -301,6 +269,7 @@
                     <div class="cat-pill structure" data-cat="structure"><span class="cat-dot"></span> Structure</div>
                     <div class="cat-pill semantic" data-cat="semantic"><span class="cat-dot"></span> Semantic / Urgency</div>
                 </div>
+                <div class="filter-count" id="filterCount" style="margin-bottom:12px">Showing 19 of 19</div>
                 <div class="feat-grid" id="featGrid"></div>
             </div>
         </div>
@@ -448,7 +417,6 @@
     const CAT_COLOR = { text: 'text', url: 'url', domain: 'domain', structure: 'structure', semantic: 'semantic' };
 
     const featGrid = document.getElementById('featGrid');
-    const featureFilter = document.getElementById('featureFilter');
     const filterCount = document.getElementById('filterCount');
     const categoryPills = Array.from(document.querySelectorAll('.cat-pill[data-cat]'));
 
@@ -478,18 +446,10 @@
             pill.classList.toggle('active', pill.dataset.cat === selectedCategory);
         });
 
-        if (featureFilter && featureFilter.value !== selectedCategory) {
-            featureFilter.value = selectedCategory;
-        }
-
         if (filterCount) {
             filterCount.textContent = `Showing ${visibleCount} of ${FEATURES.length}`;
         }
     }
-
-    featureFilter?.addEventListener('change', (event) => {
-        applyFeatureFilter(event.target.value);
-    });
 
     categoryPills.forEach(pill => {
         pill.addEventListener('click', () => applyFeatureFilter(pill.dataset.cat));
