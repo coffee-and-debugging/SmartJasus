@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CatchFish | Model</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #080B0F; --surface: #0C1018; --surface2: #0F1520;
+            --border: #1B2535; --border2: #253050;
+            --text: #C8D6E8; --muted: #546880; --muted2: #8299B5;
+            --accent: #2E7DD3; --green: #0D9E74; --red: #C93030; --orange: #C97B20;
+            --mono: 'Consolas', 'SFMono-Regular', monospace;
+        }
+        body { background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--text); line-height: 1.5; font-size: 0.88rem; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1B2535; border-radius: 2px; }
+
+        .cis-wrapper { display: flex; min-height: 100vh; }
+        .cis-sidebar { width: 210px; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+        .logo-area { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+        .logo-icon { background: linear-gradient(135deg, #1A4A96, #5B21B6); width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .logo-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .logo-text { font-size: 0.88rem; font-weight: 700; color: #B8CCE4; line-height: 1.2; }
+        .logo-sub { font-size: 0.59rem; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
+        .nav-section { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); padding: 14px 8px 5px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 1px; }
+        .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 4px; color: var(--muted2); font-size: 0.8rem; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.1s, color 0.1s; border-left: 2px solid transparent; }
+        .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
+        .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
+        .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+
+        .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
+        .top-navbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 16px; margin-bottom: 14px; }
+        .page-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+        .page-title i { color: var(--accent); }
+        .theme-toggle { display: inline-flex; align-items: center; background: #050810; border: 1px solid #1B2535; border-radius: 999px; padding: 3px; cursor: pointer; position: relative; height: 28px; width: 64px; transition: border-color 0.15s; }
+        .theme-toggle:hover { border-color: var(--accent); }
+        .theme-toggle .tt-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 20px; border-radius: 999px; font-size: 0.68rem; position: relative; z-index: 1; transition: color 0.2s; }
+        .theme-toggle .tt-icon.tt-moon { color: #6A88A8; }
+        .theme-toggle .tt-icon.tt-sun  { color: #3A5070; }
+        .theme-toggle .tt-pill { position: absolute; top: 3px; left: 3px; width: 26px; height: 20px; border-radius: 999px; background: #1A2535; transition: transform 0.2s cubic-bezier(.4,0,.2,1); box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; }
+        .stat-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 7px; }
+        .stat-number { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; color: var(--accent); line-height: 1; }
+        .stat-number.green  { color: var(--green); }
+        .stat-number.orange { color: var(--orange); }
+        .stat-number.red    { color: var(--red); }
+        .stat-sub { font-size: 0.62rem; color: var(--muted); margin-top: 4px; }
+
+        /* Cards */
+        .cis-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; margin-bottom: 12px; }
+        .card-header { padding: 9px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted2); }
+        .card-header i { color: var(--accent); font-size: 0.7rem; }
+        .card-body { padding: 14px; }
+
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+        /* Model comparison table */
+        .model-table { width: 100%; border-collapse: collapse; }
+        .model-table th { font-size: 0.57rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 600; }
+        .model-table td { padding: 9px 10px; border-bottom: 1px solid rgba(27,37,53,0.5); font-size: 0.78rem; vertical-align: middle; }
+        .model-table tr:last-child td { border-bottom: none; }
+        .model-table tr.best-row td { background: rgba(46,125,211,0.05); }
+        .model-name { font-weight: 700; color: var(--text); }
+        .best-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; background: rgba(46,125,211,0.16); color: #60A5FA; border: 1px solid rgba(46,125,211,0.32); margin-left: 6px; }
+        .metric-val { font-family: var(--mono); font-size: 0.75rem; }
+        .metric-val.good { color: var(--green); }
+        .metric-val.med  { color: var(--orange); }
+        .metric-val.bad  { color: var(--red); }
+        .metric-val.neu  { color: var(--muted2); }
+
+        /* Metric bars */
+        .metric-bar-wrap { width: 70px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 5px; }
+        .metric-bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.7s cubic-bezier(0.34,1.1,0.64,1); }
+
+        /* Radar-style metric cards for best model */
+        .metric-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .metric-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 11px 13px; text-align: center; }
+        .metric-card-label { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
+        .metric-card-val { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; line-height: 1; }
+        .metric-card-sub  { font-size: 0.62rem; color: var(--muted); margin-top: 4px; }
+        .metric-ring { position: relative; width: 60px; height: 60px; margin: 0 auto 8px; }
+        .metric-ring svg { transform: rotate(-90deg); }
+        .metric-ring-track { stroke: var(--border); }
+        .metric-ring-fill { stroke-dasharray: 0 157; stroke-dashoffset: 0; transition: stroke-dasharray 0.9s cubic-bezier(0.34,1.1,0.64,1); }
+        .metric-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 0.72rem; font-weight: 700; }
+
+        /* Confusion matrix */
+        .cm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-width: 260px; }
+        .cm-cell { border-radius: 5px; padding: 14px 10px; text-align: center; }
+        .cm-cell.tp { background: rgba(13,158,116,0.14); border: 1px solid rgba(13,158,116,0.3); }
+        .cm-cell.tn { background: rgba(13,158,116,0.08); border: 1px solid rgba(13,158,116,0.18); }
+        .cm-cell.fp { background: rgba(201,48,48,0.08);  border: 1px solid rgba(201,48,48,0.2); }
+        .cm-cell.fn { background: rgba(201,48,48,0.14);  border: 1px solid rgba(201,48,48,0.3); }
+        .cm-val  { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; line-height: 1; }
+        .cm-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-top: 4px; }
+        .cm-sub   { font-size: 0.63rem; color: var(--muted2); margin-top: 2px; }
+        .cm-axis  { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .cm-wrapper { display: flex; gap: 20px; align-items: flex-start; }
+        .cm-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 30px; }
+        .cm-legend-row { display: flex; align-items: flex-start; gap: 8px; font-size: 0.67rem; color: var(--muted2); line-height: 1.35; }
+        .cm-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
+
+        /* Horizontal metric bars for comparison */
+        .hbar-list { display: flex; flex-direction: column; gap: 9px; }
+        .hbar-row { }
+        .hbar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .hbar-name { font-size: 0.69rem; color: var(--text); font-weight: 600; }
+        .hbar-val  { font-family: var(--mono); font-size: 0.68rem; color: var(--muted2); }
+        .hbar-track { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .hbar-fill  { height: 100%; border-radius: 4px; width: 0; transition: width 0.75s cubic-bezier(0.34,1.1,0.64,1); }
+
+        /* Threshold explanation */
+        .thresh-wrap { display: flex; gap: 12px; align-items: stretch; }
+        .thresh-slider-area { flex: 1; }
+        .thresh-track { position: relative; height: 8px; background: linear-gradient(90deg, #0D9E74 0%, #D97706 60%, #C93030 80%, #C93030 100%); border-radius: 4px; margin: 20px 0 8px; }
+        .thresh-marker { position: absolute; top: -7px; width: 3px; height: 22px; background: #FFFFFF; border-radius: 2px; box-shadow: 0 0 6px rgba(255,255,255,0.4); transform: translateX(-50%); left: 60%; transition: left 0.5s ease; }
+        .thresh-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.58rem; color: var(--muted); }
+        .thresh-info { display: flex; flex-direction: column; gap: 7px; width: 200px; }
+        .thresh-info-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
+        .thresh-info-label { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 3px; }
+        .thresh-info-val   { font-family: var(--mono); font-size: 0.88rem; font-weight: 700; color: var(--text); }
+
+        /* Light mode */
+        body.light-mode { background: #EEF2F8; color: #1A2535; }
+        body.light-mode .cis-sidebar, body.light-mode .top-navbar { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .stat-card, body.light-mode .cis-card { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .nav-item { color: #4A607A; }
+        body.light-mode .nav-item.active { background: #EAF2FF; color: #1D4ED8; border-left-color: #2563EB; }
+        body.light-mode .nav-item:hover:not(.active) { background: #F2F7FF; color: #1E293B; }
+        body.light-mode .stat-number { color: #1D4ED8; }
+        body.light-mode .stat-number.green  { color: #047857; }
+        body.light-mode .stat-number.orange { color: #B45309; }
+        body.light-mode .stat-number.red    { color: #B91C1C; }
+        body.light-mode .model-table td { color: #334155; }
+        body.light-mode .model-table th { color: #6A88A8; }
+        body.light-mode .model-table tr.best-row td { background: rgba(37,99,235,0.05); }
+        body.light-mode .metric-card, body.light-mode .thresh-info-item { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .hbar-track { background: #CCDAE8; }
+        body.light-mode .metric-bar-wrap { background: #CCDAE8; }
+        body.light-mode .logo-text { color: #0F172A; }
+        body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
+        body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
+        body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
+        body.light-mode .theme-toggle .tt-icon.tt-sun  { color: #D97706; }
+        body.light-mode .thresh-track { background: linear-gradient(90deg, #047857 0%, #92400E 60%, #991B1B 80%, #991B1B 100%); }
+        body.light-mode .thresh-marker { background: #1E293B; }
+        footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
+        body.light-mode footer { border-top-color: #CCDAE8; }
+
+        @media (max-width: 1100px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .cis-sidebar { width: 190px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .metric-cards { grid-template-columns: repeat(2, 1fr); }
+            .thresh-wrap { flex-direction: column; }
+            .thresh-info { width: 100%; flex-direction: row; flex-wrap: wrap; }
+            .cm-wrapper { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="cis-wrapper">
+
+    <!-- Sidebar -->
+    <div class="cis-sidebar">
+        <div class="logo-area">
+            <div class="logo-icon"><img src="/web-icon.png" alt="CatchFish"></div>
+            <div class="logo-text">CatchFish<span class="logo-sub">Phishing Detection</span></div>
+        </div>
+        <div class="nav-section">Navigation</div>
+        <div class="nav-menu">
+            <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>SOC Overview</span></a>
+            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
+            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
+            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
+            <a href="/mail-dashboard" class="nav-item"><i class="fas fa-envelope-open-text"></i><span>Mail Console</span></a>
+        </div>
+        <div class="nav-section">ML Pipeline</div>
+        <div class="nav-menu">
+            <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
+            <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/model" class="nav-item active"><i class="fas fa-brain"></i><span>Model</span></a>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="cis-main">
+
+        <!-- Top bar -->
+        <div class="top-navbar">
+            <div class="page-title"><i class="fas fa-brain"></i> ML Model &amp; Performance</div>
+            <div>
+                <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
+                    <span class="tt-pill"></span>
+                    <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
+                    <span class="tt-icon tt-sun"><i class="fas fa-sun"></i></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats (best model) -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Best Model</div>
+                <div class="stat-number" id="statModelName" style="font-size:1rem;line-height:1.4">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">AUC-ROC</div>
+                <div class="stat-number green" id="statAUC">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">F1 Score</div>
+                <div class="stat-number orange" id="statF1">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Threshold</div>
+                <div class="stat-number" id="statThreshold">0.60</div>
+                <div class="stat-sub">Anti-FP tuned</div>
+            </div>
+        </div>
+
+        <!-- Ring metrics for best model -->
+        <div class="metric-cards" id="metricCards">
+            <div class="metric-card">
+                <div class="metric-card-label">AUC-ROC</div>
+                <div class="metric-ring"><svg width="60" height="60" viewBox="0 0 60 60"><circle class="metric-ring-track" cx="30" cy="30" r="25" fill="none" stroke-width="6"/><circle class="metric-ring-fill" id="ring-auc" cx="30" cy="30" r="25" fill="none" stroke="#0D9E74" stroke-width="6" stroke-linecap="round"/></svg><div class="metric-ring-text" id="ring-auc-txt" style="color:#5AE8B4">—</div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-label">Precision</div>
+                <div class="metric-ring"><svg width="60" height="60" viewBox="0 0 60 60"><circle class="metric-ring-track" cx="30" cy="30" r="25" fill="none" stroke-width="6"/><circle class="metric-ring-fill" id="ring-prec" cx="30" cy="30" r="25" fill="none" stroke="#2E7DD3" stroke-width="6" stroke-linecap="round"/></svg><div class="metric-ring-text" id="ring-prec-txt" style="color:#60A5FA">—</div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-label">Recall</div>
+                <div class="metric-ring"><svg width="60" height="60" viewBox="0 0 60 60"><circle class="metric-ring-track" cx="30" cy="30" r="25" fill="none" stroke-width="6"/><circle class="metric-ring-fill" id="ring-rec" cx="30" cy="30" r="25" fill="none" stroke="#C97B20" stroke-width="6" stroke-linecap="round"/></svg><div class="metric-ring-text" id="ring-rec-txt" style="color:#F0AA32">—</div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-label">Accuracy</div>
+                <div class="metric-ring"><svg width="60" height="60" viewBox="0 0 60 60"><circle class="metric-ring-track" cx="30" cy="30" r="25" fill="none" stroke-width="6"/><circle class="metric-ring-fill" id="ring-acc" cx="30" cy="30" r="25" fill="none" stroke="#7C3AED" stroke-width="6" stroke-linecap="round"/></svg><div class="metric-ring-text" id="ring-acc-txt" style="color:#A78BFA">—</div></div>
+            </div>
+        </div>
+
+        <!-- Main grid: comparison table | confusion matrix -->
+        <div class="main-grid">
+
+            <!-- Model comparison table -->
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-table-list"></i> All Models — Comparison at Threshold 0.60</div>
+                <div class="card-body" style="padding:0">
+                    <table class="model-table" id="modelTable">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>AUC</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1@0.60</th>
+                                <th>FP</th>
+                                <th>FN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modelTableBody">
+                            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading model data…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Confusion matrix + metric bars -->
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-grid-2"></i> Confusion Matrix — Best Model</div>
+                <div class="card-body">
+                    <div style="font-size:0.62rem;color:var(--muted);margin-bottom:10px">Predicted →</div>
+                    <div class="cm-wrapper">
+                        <div>
+                            <div style="display:flex;gap:6px;margin-bottom:4px">
+                                <div style="width:24px"></div>
+                                <div class="cm-axis" style="flex:1;text-align:center">Legitimate</div>
+                                <div class="cm-axis" style="flex:1;text-align:center">Phishing</div>
+                            </div>
+                            <div style="display:flex;gap:6px">
+                                <div style="display:flex;flex-direction:column;justify-content:space-around;gap:6px">
+                                    <div class="cm-axis" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;height:80px">Legit</div>
+                                    <div class="cm-axis" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;height:80px">Phishing</div>
+                                </div>
+                                <div class="cm-grid">
+                                    <div class="cm-cell tn">
+                                        <div class="cm-val" id="cmTN" style="color:#5AE8B4">—</div>
+                                        <div class="cm-label">TN</div>
+                                        <div class="cm-sub">Correct Legit</div>
+                                    </div>
+                                    <div class="cm-cell fp">
+                                        <div class="cm-val" id="cmFP" style="color:#F08080">—</div>
+                                        <div class="cm-label">FP</div>
+                                        <div class="cm-sub">False Alarm</div>
+                                    </div>
+                                    <div class="cm-cell fn">
+                                        <div class="cm-val" id="cmFN" style="color:#F08080">—</div>
+                                        <div class="cm-label">FN</div>
+                                        <div class="cm-sub">Missed Phish</div>
+                                    </div>
+                                    <div class="cm-cell tp">
+                                        <div class="cm-val" id="cmTP" style="color:#5AE8B4">—</div>
+                                        <div class="cm-label">TP</div>
+                                        <div class="cm-sub">Caught Phish</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cm-legend">
+                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#0D9E74"></span><span><strong style="color:#5AE8B4">TN:</strong> Legit email correctly classified as legitimate</span></div>
+                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#C93030"></span><span><strong style="color:#F08080">FP:</strong> Legit email misclassified as phishing (false alarm)</span></div>
+                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#C93030"></span><span><strong style="color:#F08080">FN:</strong> Phishing email missed as legitimate (dangerous)</span></div>
+                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#0D9E74"></span><span><strong style="color:#5AE8B4">TP:</strong> Phishing email correctly caught</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric comparison bars + Threshold -->
+        <div class="main-grid">
+
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-chart-bar"></i> Metric Comparison — All Models</div>
+                <div class="card-body">
+                    <div style="font-size:0.62rem;color:var(--muted);margin-bottom:10px">AUC-ROC score per model. Higher is better. Best model highlighted.</div>
+                    <div class="hbar-list" id="hbarList"></div>
+                </div>
+            </div>
+
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-scale-balanced"></i> Decision Threshold</div>
+                <div class="card-body">
+                    <div class="thresh-wrap">
+                        <div class="thresh-slider-area">
+                            <div style="font-size:0.68rem;color:var(--muted2);margin-bottom:4px;line-height:1.5">The production threshold is set to <strong style="color:var(--text)" id="threshDisplay">0.60</strong>. A higher threshold reduces false positives (legitimate emails wrongly flagged) at the cost of potentially missing some phishing emails.</div>
+                            <div class="thresh-track">
+                                <div class="thresh-marker" id="threshMarker"></div>
+                            </div>
+                            <div class="thresh-labels">
+                                <span>0.0</span><span>0.2</span><span>0.4</span><span>0.6</span><span>0.8</span><span>1.0</span>
+                            </div>
+                        </div>
+                        <div class="thresh-info">
+                            <div class="thresh-info-item">
+                                <div class="thresh-info-label">Current Threshold</div>
+                                <div class="thresh-info-val" id="tiThresh">0.60</div>
+                            </div>
+                            <div class="thresh-info-item">
+                                <div class="thresh-info-label">Trusted Domain Reduction</div>
+                                <div class="thresh-info-val">−0.18</div>
+                            </div>
+                            <div class="thresh-info-item">
+                                <div class="thresh-info-label">Selection Criterion</div>
+                                <div class="thresh-info-val" style="font-size:0.75rem">F1 @ threshold</div>
+                            </div>
+                            <div class="thresh-info-item">
+                                <div class="thresh-info-label">Models Evaluated</div>
+                                <div class="thresh-info-val" id="tiModels">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm descriptions -->
+                    <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
+                        <div style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:2px">Evaluated Classifiers</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="algoGrid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer><i class="fas fa-brain"></i> Model — CatchFish Real-time ML Phishing Detection System</footer>
+    </div>
+</div>
+
+<script>
+    // ── Theme ────────────────────────────────────────────────────────────────
+    function applyTheme(t) { document.body.classList.toggle('light-mode', t === 'light'); }
+    function initTheme() {
+        const t = localStorage.getItem('sjTheme') || 'dark';
+        applyTheme(t);
+        document.getElementById('themeToggle')?.addEventListener('click', () => {
+            const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+            localStorage.setItem('sjTheme', next);
+            applyTheme(next);
+        });
+    }
+    window.addEventListener('storage', e => { if (e.key === 'sjTheme') applyTheme(e.newValue || 'dark'); });
+    initTheme();
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function animateRing(ringId, value01, duration = 900) {
+        const circ = 2 * Math.PI * 25; // r=25
+        const el = document.getElementById(ringId);
+        if (!el) return;
+        setTimeout(() => {
+            el.style.strokeDasharray = `${value01 * circ} ${circ}`;
+        }, 100);
+    }
+
+    function fmt(v, digits = 4) { return (v !== undefined && v !== null) ? parseFloat(v).toFixed(digits) : '—'; }
+    function pct(v) { return v !== undefined ? (parseFloat(v) * 100).toFixed(1) + '%' : '—'; }
+
+    function metricColor(v, flip = false) {
+        const n = parseFloat(v);
+        if (isNaN(n)) return 'neu';
+        if (flip) { return n > 200 ? 'bad' : n > 50 ? 'med' : 'good'; }
+        return n >= 0.92 ? 'good' : n >= 0.80 ? 'med' : 'bad';
+    }
+
+    const ALGO_DESCS = {
+        'Logistic Regression':   { icon: 'fa-chart-line',    color: '#60A5FA', desc: 'Linear model. Fast, interpretable. Good baseline.' },
+        'Random Forest':         { icon: 'fa-tree',          color: '#5AE8B4', desc: '150 trees, max_depth 12. Handles non-linearity well.' },
+        'Extra Trees':           { icon: 'fa-leaf',          color: '#F0AA32', desc: 'Randomised splits — faster than RF, comparable accuracy.' },
+        'Gradient Boosting':     { icon: 'fa-rocket',        color: '#F08080', desc: '200 estimators, lr=0.08. Sequential error correction.' },
+        'XGBoost':               { icon: 'fa-bolt',          color: '#A78BFA', desc: 'Regularised boosting. Often best on tabular data.' },
+    };
+
+    // ── Load model info ──────────────────────────────────────────────────────
+    async function loadModel() {
+        let info = {};
+        try { info = await fetch('/api/model-info').then(r => r.json()); } catch(e) {}
+
+        const bestName   = info.model_name || 'Unknown';
+        const threshold  = info.threshold  || 0.60;
+        const auc        = info.auc;
+        const f1         = info.f1;
+        const results    = info.results_all || {};
+        const bestResult = results[bestName] || {};
+
+        // Stats
+        document.getElementById('statModelName').textContent  = bestName;
+        document.getElementById('statAUC').textContent        = auc ? parseFloat(auc).toFixed(4) : '—';
+        document.getElementById('statF1').textContent         = f1  ? parseFloat(f1).toFixed(4)  : '—';
+        document.getElementById('statThreshold').textContent  = threshold;
+        document.getElementById('threshDisplay').textContent  = threshold;
+        document.getElementById('tiThresh').textContent       = threshold;
+        document.getElementById('tiModels').textContent       = Object.keys(results).length || '—';
+
+        // Threshold marker
+        const marker = document.getElementById('threshMarker');
+        if (marker) marker.style.left = (threshold * 100) + '%';
+
+        // Ring metrics
+        const prec = bestResult.precision;
+        const rec  = bestResult.recall;
+        const acc  = bestResult.accuracy;
+        animateRing('ring-auc',  auc  || 0);
+        animateRing('ring-prec', prec || 0);
+        animateRing('ring-rec',  rec  || 0);
+        animateRing('ring-acc',  acc  || 0);
+        document.getElementById('ring-auc-txt').textContent  = auc  ? (parseFloat(auc)  * 100).toFixed(1) + '%' : '—';
+        document.getElementById('ring-prec-txt').textContent = prec ? (parseFloat(prec) * 100).toFixed(1) + '%' : '—';
+        document.getElementById('ring-rec-txt').textContent  = rec  ? (parseFloat(rec)  * 100).toFixed(1) + '%' : '—';
+        document.getElementById('ring-acc-txt').textContent  = acc  ? (parseFloat(acc)  * 100).toFixed(1) + '%' : '—';
+
+        // Confusion matrix
+        const thKey = `f1_at_${threshold}`;
+        const fpKey = `fp_at_${threshold}`;
+        const fnKey = `fn_at_${threshold}`;
+        document.getElementById('cmTN').textContent = bestResult.tn !== undefined ? bestResult.tn.toLocaleString() : '—';
+        document.getElementById('cmFP').textContent = bestResult[fpKey] !== undefined ? bestResult[fpKey].toLocaleString() : '—';
+        document.getElementById('cmFN').textContent = bestResult[fnKey] !== undefined ? bestResult[fnKey].toLocaleString() : '—';
+        document.getElementById('cmTP').textContent = bestResult.tp !== undefined ? bestResult.tp.toLocaleString() : '—';
+
+        // Model table
+        const tbody = document.getElementById('modelTableBody');
+        const modelNames = Object.keys(results);
+        if (!modelNames.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No model data available</td></tr>';
+        } else {
+            tbody.innerHTML = modelNames.map(name => {
+                const r = results[name];
+                const isBest = name === bestName;
+                const fpV = r[fpKey] !== undefined ? r[fpKey] : '—';
+                const fnV = r[fnKey] !== undefined ? r[fnKey] : '—';
+                const f1V = r[thKey] !== undefined ? r[thKey] : r['f1'] || '—';
+                const aucW = r.auc ? Math.round(parseFloat(r.auc) * 100) : 0;
+                return `<tr${isBest ? ' class="best-row"' : ''}>
+                    <td><span class="model-name">${name}${isBest ? '<span class="best-badge"><i class="fas fa-star"></i> Best</span>' : ''}</span></td>
+                    <td><span class="metric-val ${metricColor(r.auc)}">${fmt(r.auc)}</span>
+                        <span class="metric-bar-wrap"><span class="metric-bar-fill" data-w="${aucW}" style="width:0%;background:${isBest ? '#0D9E74' : '#2E7DD3'}"></span></span></td>
+                    <td><span class="metric-val ${metricColor(r.precision)}">${fmt(r.precision)}</span></td>
+                    <td><span class="metric-val ${metricColor(r.recall)}">${fmt(r.recall)}</span></td>
+                    <td><span class="metric-val ${metricColor(f1V)}">${fmt(f1V)}</span></td>
+                    <td><span class="metric-val ${metricColor(fpV, true)}">${fpV}</span></td>
+                    <td><span class="metric-val ${metricColor(fnV, true)}">${fnV}</span></td>
+                </tr>`;
+            }).join('');
+            setTimeout(() => {
+                tbody.querySelectorAll('.metric-bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+            }, 120);
+        }
+
+        // HBar comparison
+        const hbarList = document.getElementById('hbarList');
+        const maxAUC = Math.max(...modelNames.map(n => parseFloat(results[n].auc || 0)), 0.01);
+        hbarList.innerHTML = modelNames.map(name => {
+            const r = results[name];
+            const aucVal = parseFloat(r.auc || 0);
+            const pct = Math.round((aucVal / maxAUC) * 100);
+            const isBest = name === bestName;
+            const color = isBest ? 'linear-gradient(90deg,#0D9E74,#5AE8B4)' : 'linear-gradient(90deg,#2E7DD3,#60A5FA)';
+            return `<div class="hbar-row">
+                <div class="hbar-header">
+                    <span class="hbar-name">${name}${isBest ? ' ★' : ''}</span>
+                    <span class="hbar-val">${fmt(r.auc)}</span>
+                </div>
+                <div class="hbar-track"><div class="hbar-fill" data-pct="${pct}" style="width:0%;background:${color}"></div></div>
+            </div>`;
+        }).join('');
+        setTimeout(() => {
+            hbarList.querySelectorAll('.hbar-fill').forEach((b, i) => {
+                setTimeout(() => { b.style.width = b.dataset.pct + '%'; }, i * 60);
+            });
+        }, 150);
+
+        // Algorithm grid
+        const algoGrid = document.getElementById('algoGrid');
+        modelNames.forEach(name => {
+            const cfg = ALGO_DESCS[name] || { icon: 'fa-robot', color: '#8299B5', desc: 'Classifier.' };
+            const div = document.createElement('div');
+            div.style.cssText = `background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:9px 10px;${name === bestName ? 'border-color:var(--accent);' : ''}`;
+            div.innerHTML = `<div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${cfg.color};margin-bottom:3px"><i class="fas ${cfg.icon}" style="margin-right:5px"></i>${name}</div>
+                <div style="font-size:0.68rem;color:var(--muted2);line-height:1.4">${cfg.desc}</div>`;
+            algoGrid.appendChild(div);
+        });
+    }
+
+    loadModel();
+</script>
+</body>
+</html>

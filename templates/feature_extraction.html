@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CatchFish | Feature Extraction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #080B0F; --surface: #0C1018; --surface2: #0F1520;
+            --border: #1B2535; --border2: #253050;
+            --text: #C8D6E8; --muted: #546880; --muted2: #8299B5;
+            --accent: #2E7DD3; --green: #0D9E74; --red: #C93030; --orange: #C97B20;
+            --purple: #7C3AED; --yellow: #D97706;
+            --mono: 'Consolas', 'SFMono-Regular', monospace;
+        }
+        body { background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--text); line-height: 1.5; font-size: 0.88rem; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1B2535; border-radius: 2px; }
+
+        .cis-wrapper { display: flex; min-height: 100vh; }
+        .cis-sidebar { width: 210px; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+        .logo-area { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+        .logo-icon { background: linear-gradient(135deg, #1A4A96, #5B21B6); width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .logo-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .logo-text { font-size: 0.88rem; font-weight: 700; color: #B8CCE4; line-height: 1.2; }
+        .logo-sub { font-size: 0.59rem; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
+        .nav-section { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); padding: 14px 8px 5px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 1px; }
+        .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 4px; color: var(--muted2); font-size: 0.8rem; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.1s, color 0.1s; border-left: 2px solid transparent; }
+        .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
+        .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
+        .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+
+        .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
+        .top-navbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 16px; margin-bottom: 14px; }
+        .page-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+        .page-title i { color: var(--accent); }
+        .theme-toggle { display: inline-flex; align-items: center; background: #050810; border: 1px solid #1B2535; border-radius: 999px; padding: 3px; cursor: pointer; position: relative; height: 28px; width: 64px; transition: border-color 0.15s; }
+        .theme-toggle:hover { border-color: var(--accent); }
+        .theme-toggle .tt-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 20px; border-radius: 999px; font-size: 0.68rem; position: relative; z-index: 1; transition: color 0.2s; }
+        .theme-toggle .tt-icon.tt-moon { color: #6A88A8; }
+        .theme-toggle .tt-icon.tt-sun  { color: #3A5070; }
+        .theme-toggle .tt-pill { position: absolute; top: 3px; left: 3px; width: 26px; height: 20px; border-radius: 999px; background: #1A2535; transition: transform 0.2s cubic-bezier(.4,0,.2,1); box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; }
+        .stat-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 7px; }
+        .stat-number { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; color: var(--accent); line-height: 1; }
+        .stat-number.green  { color: var(--green); }
+        .stat-number.orange { color: var(--orange); }
+        .stat-number.purple { color: #A78BFA; }
+
+        /* Cards */
+        .cis-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+        .card-header { padding: 9px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted2); }
+        .card-header i { color: var(--accent); font-size: 0.7rem; }
+        .card-body { padding: 14px; }
+
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .full-card  { margin-bottom: 12px; }
+
+        /* Feature cards grid */
+        .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .feat-card {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 5px; padding: 10px 12px; cursor: default;
+            transition: border-color 0.15s, transform 0.15s;
+            border-left: 3px solid transparent;
+            opacity: 0; transform: translateY(8px);
+            animation: fadeUp 0.35s ease forwards;
+        }
+        .feat-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+        .feat-card.cat-text     { border-left-color: #2E7DD3; }
+        .feat-card.cat-url      { border-left-color: #0D9E74; }
+        .feat-card.cat-domain   { border-left-color: #C97B20; }
+        .feat-card.cat-structure{ border-left-color: #7C3AED; }
+        .feat-card.cat-semantic { border-left-color: #C93030; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .feat-name { font-family: var(--mono); font-size: 0.73rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+        .feat-type { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 5px; }
+        .feat-desc { font-size: 0.7rem; color: var(--muted2); line-height: 1.45; }
+        .feat-tag  { display: inline-block; margin-top: 6px; padding: 1px 6px; border-radius: 2px; font-size: 0.57rem; font-weight: 700; text-transform: uppercase; }
+        .feat-tag.text     { background: rgba(46,125,211,0.14); color: #60A5FA; }
+        .feat-tag.url      { background: rgba(13,158,116,0.12); color: #5AE8B4; }
+        .feat-tag.domain   { background: rgba(201,123,32,0.14); color: #F0AA32; }
+        .feat-tag.structure{ background: rgba(124,58,237,0.14); color: #A78BFA; }
+        .feat-tag.semantic { background: rgba(201,48,48,0.14);  color: #F08080; }
+
+        /* Importance chart */
+        .importance-list { display: flex; flex-direction: column; gap: 7px; }
+        .imp-row { display: flex; align-items: center; gap: 9px; }
+        .imp-name { font-family: var(--mono); font-size: 0.67rem; color: var(--muted2); width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .imp-bar-track { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .imp-bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 0.7s cubic-bezier(0.34, 1.1, 0.64, 1); }
+        .imp-bar-fill.high   { background: linear-gradient(90deg, #C93030, #F08080); }
+        .imp-bar-fill.medium { background: linear-gradient(90deg, #C97B20, #F0AA32); }
+        .imp-bar-fill.low    { background: linear-gradient(90deg, #2E7DD3, #60A5FA); }
+        .imp-val { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); width: 34px; text-align: right; flex-shrink: 0; }
+
+        /* Pipeline flow */
+        .pipe-flow { display: flex; flex-direction: column; gap: 6px; }
+        .pipe-stage { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; }
+        .pipe-stage-icon { width: 32px; height: 32px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; margin-top: 2px; }
+        .pipe-stage-content {}
+        .pipe-stage-title { font-size: 0.72rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+        .pipe-stage-desc  { font-size: 0.68rem; color: var(--muted2); line-height: 1.45; }
+        .pipe-connector { text-align: center; color: #253050; font-size: 0.78rem; line-height: 1; }
+
+        /* Rule adjustments */
+        .rule-list { display: flex; flex-direction: column; gap: 6px; }
+        .rule-item { display: flex; align-items: flex-start; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 12px; }
+        .rule-delta { font-family: var(--mono); font-size: 0.82rem; font-weight: 700; flex-shrink: 0; width: 40px; }
+        .rule-delta.pos { color: var(--red); }
+        .rule-delta.neg { color: var(--green); }
+        .rule-text { font-size: 0.72rem; color: var(--muted2); line-height: 1.4; }
+        .rule-text strong { color: var(--text); }
+
+        /* Category legend */
+        .cat-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .cat-pill { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 3px; font-size: 0.67rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: opacity 0.15s; }
+        .cat-pill.text     { background: rgba(46,125,211,0.12); color: #60A5FA; border-color: rgba(46,125,211,0.25); }
+        .cat-pill.url      { background: rgba(13,158,116,0.12); color: #5AE8B4; border-color: rgba(13,158,116,0.25); }
+        .cat-pill.domain   { background: rgba(201,123,32,0.12); color: #F0AA32; border-color: rgba(201,123,32,0.25); }
+        .cat-pill.structure{ background: rgba(124,58,237,0.12); color: #A78BFA; border-color: rgba(124,58,237,0.25); }
+        .cat-pill.semantic { background: rgba(201,48,48,0.12);  color: #F08080; border-color: rgba(201,48,48,0.25); }
+        .cat-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+        /* Light mode */
+        body.light-mode { background: #EEF2F8; color: #1A2535; }
+        body.light-mode .cis-sidebar, body.light-mode .top-navbar { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .stat-card, body.light-mode .cis-card { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .nav-item { color: #4A607A; }
+        body.light-mode .nav-item.active { background: #EAF2FF; color: #1D4ED8; border-left-color: #2563EB; }
+        body.light-mode .nav-item:hover:not(.active) { background: #F2F7FF; color: #1E293B; }
+        body.light-mode .stat-number { color: #1D4ED8; }
+        body.light-mode .stat-number.green  { color: #047857; }
+        body.light-mode .stat-number.orange { color: #B45309; }
+        body.light-mode .feat-card, body.light-mode .pipe-stage, body.light-mode .rule-item { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .feat-desc, body.light-mode .pipe-stage-desc, body.light-mode .rule-text { color: #334155; }
+        body.light-mode .imp-bar-track { background: #CCDAE8; }
+        body.light-mode .logo-text { color: #0F172A; }
+        body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
+        body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
+        body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
+        body.light-mode .theme-toggle .tt-icon.tt-sun  { color: #D97706; }
+        footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
+        body.light-mode footer { border-top-color: #CCDAE8; }
+
+        @media (max-width: 1200px) { .feat-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 1100px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .cis-sidebar { width: 190px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .feat-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 700px) { .feat-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="cis-wrapper">
+
+    <!-- Sidebar -->
+    <div class="cis-sidebar">
+        <div class="logo-area">
+            <div class="logo-icon"><img src="/web-icon.png" alt="CatchFish"></div>
+            <div class="logo-text">CatchFish<span class="logo-sub">Phishing Detection</span></div>
+        </div>
+        <div class="nav-section">Navigation</div>
+        <div class="nav-menu">
+            <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>SOC Overview</span></a>
+            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
+            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
+            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
+            <a href="/mail-dashboard" class="nav-item"><i class="fas fa-envelope-open-text"></i><span>Mail Console</span></a>
+        </div>
+        <div class="nav-section">ML Pipeline</div>
+        <div class="nav-menu">
+            <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
+            <a href="/feature-extraction" class="nav-item active"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="cis-main">
+
+        <!-- Top bar -->
+        <div class="top-navbar">
+            <div class="page-title"><i class="fas fa-microscope"></i> Feature Extraction</div>
+            <div>
+                <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
+                    <span class="tt-pill"></span>
+                    <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
+                    <span class="tt-icon tt-sun"><i class="fas fa-sun"></i></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Total Features</div>
+                <div class="stat-number" id="statTotal">19</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">URL Features</div>
+                <div class="stat-number green">5</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Domain Features</div>
+                <div class="stat-number orange">6</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Rule Adjustments</div>
+                <div class="stat-number purple">5</div>
+            </div>
+        </div>
+
+        <!-- Feature cards -->
+        <div class="cis-card full-card">
+            <div class="card-header"><i class="fas fa-layer-group"></i> All Extracted Features</div>
+            <div class="card-body">
+                <div class="cat-legend">
+                    <div class="cat-pill text"><span class="cat-dot"></span> Text / Content</div>
+                    <div class="cat-pill url"><span class="cat-dot"></span> URL Analysis</div>
+                    <div class="cat-pill domain"><span class="cat-dot"></span> Domain</div>
+                    <div class="cat-pill structure"><span class="cat-dot"></span> Structure</div>
+                    <div class="cat-pill semantic"><span class="cat-dot"></span> Semantic / Urgency</div>
+                </div>
+                <div class="feat-grid" id="featGrid"></div>
+            </div>
+        </div>
+
+        <!-- Main grid: importance | pipeline -->
+        <div class="main-grid">
+
+            <!-- Feature importance (heuristic ranking) -->
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-ranking-star"></i> Estimated Feature Importance</div>
+                <div class="card-body">
+                    <div style="font-size:0.65rem;color:var(--muted);margin-bottom:12px">Relative importance based on typical phishing detection literature and heuristic analysis. Actual weights vary per trained model.</div>
+                    <div class="importance-list" id="impList"></div>
+                </div>
+            </div>
+
+            <!-- Extraction pipeline flow -->
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-diagram-project"></i> Extraction Pipeline</div>
+                <div class="card-body">
+                    <div class="pipe-flow">
+                        <div class="pipe-stage">
+                            <div class="pipe-stage-icon" style="background:rgba(46,125,211,0.12);color:#60A5FA"><i class="fas fa-envelope-open"></i></div>
+                            <div class="pipe-stage-content">
+                                <div class="pipe-stage-title">Raw Email Input</div>
+                                <div class="pipe-stage-desc">Sender address, subject line, body text (plain or HTML), attachment flag, link count.</div>
+                            </div>
+                        </div>
+                        <div class="pipe-connector">↓</div>
+                        <div class="pipe-stage">
+                            <div class="pipe-stage-icon" style="background:rgba(163,230,53,0.1);color:#84CC16"><i class="fas fa-broom"></i></div>
+                            <div class="pipe-stage-content">
+                                <div class="pipe-stage-title">HTML Stripping &amp; Normalisation</div>
+                                <div class="pipe-stage-desc">HTML tags removed, whitespace normalised, URL tokens preserved, text lowercased for consistent vectorisation.</div>
+                            </div>
+                        </div>
+                        <div class="pipe-connector">↓</div>
+                        <div class="pipe-stage">
+                            <div class="pipe-stage-icon" style="background:rgba(13,158,116,0.12);color:#5AE8B4"><i class="fas fa-link"></i></div>
+                            <div class="pipe-stage-content">
+                                <div class="pipe-stage-title">URL Analysis</div>
+                                <div class="pipe-stage-desc">Regex extraction of all http/https URLs. Counts IP-based, shortener, HTTP-only and HTTPS links. Computes http_ratio.</div>
+                            </div>
+                        </div>
+                        <div class="pipe-connector">↓</div>
+                        <div class="pipe-stage">
+                            <div class="pipe-stage-icon" style="background:rgba(201,123,32,0.12);color:#F0AA32"><i class="fas fa-at"></i></div>
+                            <div class="pipe-stage-content">
+                                <div class="pipe-stage-title">Domain Feature Engineering</div>
+                                <div class="pipe-stage-desc">Sender domain extracted via regex. Checked against known-legitimate list and suspicious TLD set. Domain length, digits, hyphens and age proxy computed.</div>
+                            </div>
+                        </div>
+                        <div class="pipe-connector">↓</div>
+                        <div class="pipe-stage">
+                            <div class="pipe-stage-icon" style="background:rgba(201,48,48,0.1);color:#F08080"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="pipe-stage-content">
+                                <div class="pipe-stage-title">Semantic Feature Extraction</div>
+                                <div class="pipe-stage-desc">Scans body and subject for 24 urgency/deception phrases. Counts special characters and HTML tags as structural signals.</div>
+                            </div>
+                        </div>
+                        <div class="pipe-connector">↓</div>
+                        <div class="pipe-stage">
+                            <div class="pipe-stage-icon" style="background:rgba(124,58,237,0.12);color:#A78BFA"><i class="fas fa-table-columns"></i></div>
+                            <div class="pipe-stage-content">
+                                <div class="pipe-stage-title">Feature Vector Assembly</div>
+                                <div class="pipe-stage-desc">19 numeric features assembled into a DataFrame row. Passed through ColumnTransformer → HashingVectorizer (text) + StandardScaler (numeric) → ML classifier.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule adjustments -->
+        <div class="cis-card" style="margin-bottom:12px">
+            <div class="card-header"><i class="fas fa-code-branch"></i> Hybrid Rule Engine Adjustments (Post-ML)</div>
+            <div class="card-body">
+                <div style="font-size:0.68rem;color:var(--muted2);margin-bottom:12px;line-height:1.5">After the ML model outputs a raw probability, the rule engine applies additive adjustments to reduce false positives/negatives. Adjustments are logged per-email in the scan log.</div>
+                <div class="rule-list">
+                    <div class="rule-item">
+                        <div class="rule-delta neg">−0.18</div>
+                        <div class="rule-text"><strong>Trusted sender domain:</strong> If the sender domain is in the known-legitimate domains list, the phishing probability is reduced by 0.18 (clamped to ≥ 0.05). Prevents false positives from well-known senders.</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-delta pos">+0.20</div>
+                        <div class="rule-text"><strong>IP-based URL detected:</strong> URLs containing a raw IPv4 address (e.g. <code style="font-family:var(--mono);color:var(--accent)">http://192.168.x.x</code>) strongly indicate phishing. Probability raised by 0.20.</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-delta pos">+0.12</div>
+                        <div class="rule-text"><strong>Suspicious TLD:</strong> Sender domain ends in a TLD from the curated suspicious list. Probability raised by 0.12.</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-delta pos">+0.10</div>
+                        <div class="rule-text"><strong>URL shortener detected:</strong> A URL in the body matches a known shortener domain (bit.ly, tinyurl, etc.). Shorteners are commonly used to hide phishing destinations. +0.10.</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-delta pos">+0.06</div>
+                        <div class="rule-text"><strong>Digits in sender domain:</strong> Non-legitimate domain contains numeric characters — a common typosquatting signal. +0.06 if not already in the trusted list.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer><i class="fas fa-microscope"></i> Feature Extraction — CatchFish Real-time ML Phishing Detection System</footer>
+    </div>
+</div>
+
+<script>
+    function applyTheme(t) { document.body.classList.toggle('light-mode', t === 'light'); }
+    function initTheme() {
+        const t = localStorage.getItem('sjTheme') || 'dark';
+        applyTheme(t);
+        document.getElementById('themeToggle')?.addEventListener('click', () => {
+            const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+            localStorage.setItem('sjTheme', next);
+            applyTheme(next);
+        });
+    }
+    window.addEventListener('storage', e => { if (e.key === 'sjTheme') applyTheme(e.newValue || 'dark'); });
+    initTheme();
+
+    // ── Feature definitions ──────────────────────────────────────────────────
+    const FEATURES = [
+        { name: 'has_attachment',      cat: 'structure', type: 'Binary',  desc: 'Whether the email carries any attachment (1) or not (0). Phishing mails often deliver malicious payloads via attachments.' },
+        { name: 'links_count',         cat: 'url',       type: 'Integer', desc: 'Total number of URLs found in the email body via regex. High link counts correlate with spam and phishing.' },
+        { name: 'urgent_keywords',     cat: 'semantic',  type: 'Integer', desc: 'Count of urgency/deception phrases matched against a 24-entry lexicon ("verify now", "account suspended", "click here", …).' },
+        { name: 'email_length',        cat: 'text',      type: 'Integer', desc: 'Character length of the full email body. Phishing emails often skew shorter (lure only) or very long (obfuscation).' },
+        { name: 'subject_length',      cat: 'text',      type: 'Integer', desc: 'Character length of the subject line. Very short or very long subjects are atypical of legitimate correspondence.' },
+        { name: 'link_density',        cat: 'url',       type: 'Float',   desc: 'Ratio: links_count / (email_length + 1). Measures how URL-saturated the email is relative to body text.' },
+        { name: 'domain_age',          cat: 'domain',    type: 'Integer', desc: 'Proxy for domain age: 30 days for known-legitimate domains, 1–8 for others (deterministic hash). Young domains are phishing risk signals.' },
+        { name: 'special_chars',       cat: 'structure', type: 'Integer', desc: 'Count of special characters (!$%^&*…) in the body. Phishing mails often use unusual punctuation to bypass filters.' },
+        { name: 'html_tags',           cat: 'structure', type: 'Integer', desc: 'Number of HTML tags present. Rich HTML can indicate obfuscated phishing or tracking pixels; plain text is more common in legitimate mail.' },
+        { name: 'legitimate_domain',   cat: 'domain',    type: 'Binary',  desc: 'Binary flag: 1 if sender domain appears in the curated legitimate-domains JSON (100+ major providers and enterprises).' },
+        { name: 'suspicious_tld',      cat: 'domain',    type: 'Binary',  desc: 'Binary flag: 1 if the sender TLD appears in the suspicious-TLDs list (.xyz, .top, .tk, etc.).' },
+        { name: 'ip_url_count',        cat: 'url',       type: 'Integer', desc: 'Number of URLs using a raw IPv4 address instead of a hostname. Strongly indicative of phishing infrastructure.' },
+        { name: 'shortener_url_count', cat: 'url',       type: 'Integer', desc: 'Number of URLs from known URL-shortener services (bit.ly, tinyurl, …). Shorteners hide malicious destinations.' },
+        { name: 'https_url_count',     cat: 'url',       type: 'Integer', desc: 'Number of HTTPS URLs. Used in combination with http_ratio to assess secure vs insecure link mixing.' },
+        { name: 'http_url_count',      cat: 'url',       type: 'Integer', desc: 'Number of HTTP (non-TLS) URLs. Phishing sites frequently use plain HTTP to avoid certificate overhead.' },
+        { name: 'http_ratio',          cat: 'url',       type: 'Float',   desc: 'http_url_count / (links_count + 1). High ratio → mostly insecure links, a red flag for phishing.' },
+        { name: 'domain_length',       cat: 'domain',    type: 'Integer', desc: 'Character length of the sender domain string. Very long domains are a common typosquatting signal.' },
+        { name: 'domain_has_digits',   cat: 'domain',    type: 'Binary',  desc: 'Binary flag: 1 if the sender domain contains any numeric character. Domain spoofing often inserts digits.' },
+        { name: 'domain_has_hyphen',   cat: 'domain',    type: 'Binary',  desc: 'Binary flag: 1 if the sender domain contains a hyphen. Hyphenated domains are slightly more common in phishing.' },
+    ];
+
+    const CAT_COLOR = { text: 'text', url: 'url', domain: 'domain', structure: 'structure', semantic: 'semantic' };
+
+    const featGrid = document.getElementById('featGrid');
+    FEATURES.forEach((f, i) => {
+        const div = document.createElement('div');
+        div.className = `feat-card cat-${f.cat}`;
+        div.style.animationDelay = (i * 35) + 'ms';
+        div.innerHTML = `<div class="feat-name">${f.name}</div>
+            <div class="feat-type">${f.type}</div>
+            <div class="feat-desc">${f.desc}</div>
+            <span class="feat-tag ${CAT_COLOR[f.cat]}">${f.cat}</span>`;
+        featGrid.appendChild(div);
+    });
+
+    // ── Importance chart ────────────────────────────────────────────────────
+    const IMPORTANCE = [
+        { name: 'urgent_keywords',     pct: 92, level: 'high'   },
+        { name: 'http_ratio',          pct: 88, level: 'high'   },
+        { name: 'ip_url_count',        pct: 85, level: 'high'   },
+        { name: 'legitimate_domain',   pct: 82, level: 'high'   },
+        { name: 'shortener_url_count', pct: 79, level: 'high'   },
+        { name: 'link_density',        pct: 74, level: 'medium' },
+        { name: 'suspicious_tld',      pct: 70, level: 'medium' },
+        { name: 'domain_has_digits',   pct: 65, level: 'medium' },
+        { name: 'special_chars',       pct: 60, level: 'medium' },
+        { name: 'domain_age',          pct: 56, level: 'medium' },
+        { name: 'html_tags',           pct: 50, level: 'medium' },
+        { name: 'email_length',        pct: 44, level: 'low'    },
+        { name: 'links_count',         pct: 40, level: 'low'    },
+        { name: 'domain_length',       pct: 36, level: 'low'    },
+        { name: 'http_url_count',      pct: 32, level: 'low'    },
+        { name: 'has_attachment',      pct: 28, level: 'low'    },
+        { name: 'domain_has_hyphen',   pct: 24, level: 'low'    },
+        { name: 'subject_length',      pct: 20, level: 'low'    },
+        { name: 'https_url_count',     pct: 16, level: 'low'    },
+    ];
+
+    const impList = document.getElementById('impList');
+    IMPORTANCE.forEach((item, i) => {
+        const row = document.createElement('div');
+        row.className = 'imp-row';
+        row.innerHTML = `<div class="imp-name">${item.name}</div>
+            <div class="imp-bar-track"><div class="imp-bar-fill ${item.level}" data-pct="${item.pct}" style="width:0%"></div></div>
+            <div class="imp-val">${item.pct}%</div>`;
+        impList.appendChild(row);
+    });
+
+    // Animate importance bars after paint
+    setTimeout(() => {
+        document.querySelectorAll('.imp-bar-fill').forEach((bar, i) => {
+            setTimeout(() => { bar.style.width = bar.dataset.pct + '%'; }, i * 30);
+        });
+    }, 150);
+</script>
+</body>
+</html>

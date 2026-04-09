@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CatchFish | Dataset</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #080B0F; --surface: #0C1018; --surface2: #0F1520;
+            --border: #1B2535; --border2: #253050;
+            --text: #C8D6E8; --muted: #546880; --muted2: #8299B5;
+            --accent: #2E7DD3; --green: #0D9E74; --red: #C93030; --orange: #C97B20;
+            --mono: 'Consolas', 'SFMono-Regular', monospace;
+        }
+        body { background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--text); line-height: 1.5; font-size: 0.88rem; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1B2535; border-radius: 2px; }
+
+        .cis-wrapper { display: flex; min-height: 100vh; }
+        .cis-sidebar { width: 210px; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+        .logo-area { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+        .logo-icon { background: linear-gradient(135deg, #1A4A96, #5B21B6); width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .logo-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .logo-text { font-size: 0.88rem; font-weight: 700; color: #B8CCE4; line-height: 1.2; }
+        .logo-sub { font-size: 0.59rem; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
+        .nav-section { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); padding: 14px 8px 5px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 1px; }
+        .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 4px; color: var(--muted2); font-size: 0.8rem; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.1s, color 0.1s; border-left: 2px solid transparent; }
+        .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
+        .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
+        .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+
+        .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
+        .top-navbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 16px; margin-bottom: 14px; }
+        .page-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+        .page-title i { color: var(--accent); }
+        .theme-toggle { display: inline-flex; align-items: center; background: #050810; border: 1px solid #1B2535; border-radius: 999px; padding: 3px; cursor: pointer; position: relative; height: 28px; width: 64px; transition: border-color 0.15s; }
+        .theme-toggle:hover { border-color: var(--accent); }
+        .theme-toggle .tt-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 20px; border-radius: 999px; font-size: 0.68rem; position: relative; z-index: 1; transition: color 0.2s; }
+        .theme-toggle .tt-icon.tt-moon { color: #6A88A8; }
+        .theme-toggle .tt-icon.tt-sun  { color: #3A5070; }
+        .theme-toggle .tt-pill { position: absolute; top: 3px; left: 3px; width: 26px; height: 20px; border-radius: 999px; background: #1A2535; transition: transform 0.2s cubic-bezier(.4,0,.2,1); box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; }
+        .stat-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 7px; }
+        .stat-number { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; color: var(--accent); line-height: 1; }
+        .stat-number.red    { color: var(--red); }
+        .stat-number.green  { color: var(--green); }
+        .stat-number.orange { color: var(--orange); }
+
+        /* Cards */
+        .cis-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+        .card-header { padding: 9px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted2); }
+        .card-header i { color: var(--accent); font-size: 0.7rem; }
+        .card-body { padding: 14px; }
+
+        .main-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; margin-bottom: 12px; }
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+        /* Dataset table */
+        .ds-table { width: 100%; border-collapse: collapse; }
+        .ds-table th { font-size: 0.57rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); font-weight: 600; }
+        .ds-table td { padding: 8px 10px; border-bottom: 1px solid rgba(27,37,53,0.5); font-size: 0.78rem; color: var(--muted2); vertical-align: middle; }
+        .ds-table tr:last-child td { border-bottom: none; }
+        .ds-table tr:hover td { background: rgba(255,255,255,0.015); }
+        .ds-name { color: var(--text); font-weight: 600; font-family: var(--mono); font-size: 0.73rem; }
+        .ds-bar-wrap { width: 100px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .ds-bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.7s cubic-bezier(0.34, 1.1, 0.64, 1); }
+        .ds-bar-fill.phish { background: linear-gradient(90deg, #C93030, #F08080); }
+        .ds-bar-fill.legit { background: linear-gradient(90deg, #0D9E74, #5AE8B4); }
+        .ds-badge { padding: 2px 7px; border-radius: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .ds-badge.mixed    { background: rgba(46,125,211,0.14); color: #60A5FA; border: 1px solid rgba(46,125,211,0.28); }
+        .ds-badge.phishing { background: rgba(201,48,48,0.14); color: #F08080; border: 1px solid rgba(201,48,48,0.28); }
+        .ds-badge.legit-b  { background: rgba(13,158,116,0.12); color: #5AE8B4; border: 1px solid rgba(13,158,116,0.24); }
+
+        /* Stacked bar */
+        .stack-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; width: 100%; gap: 1px; }
+        .stack-seg { height: 100%; transition: width 0.8s cubic-bezier(0.34, 1.1, 0.64, 1); }
+        .stack-seg.phish { background: linear-gradient(90deg, #C93030, #E05050); }
+        .stack-seg.safe  { background: linear-gradient(90deg, #0D9E74, #2ABE8E); }
+
+        /* Distribution donut */
+        .donut-wrap { display: flex; align-items: center; gap: 20px; padding: 6px 0; }
+        .donut-svg { flex-shrink: 0; }
+        .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+        .donut-row { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+        .donut-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .donut-label { color: var(--muted2); }
+        .donut-val { font-family: var(--mono); font-weight: 700; color: var(--text); margin-left: auto; padding-left: 12px; }
+
+        /* Split bars section */
+        .split-bar-list { display: flex; flex-direction: column; gap: 10px; }
+        .split-bar-item {}
+        .split-bar-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.72rem; }
+        .split-bar-name { color: var(--text); font-weight: 600; font-family: var(--mono); font-size: 0.68rem; }
+        .split-bar-pct  { color: var(--muted); font-size: 0.62rem; font-family: var(--mono); }
+        .split-bar-track { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .split-bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 0.75s cubic-bezier(0.34, 1.1, 0.64, 1); }
+        .split-bar-fill.c0 { background: linear-gradient(90deg, #2E7DD3, #60A5FA); }
+        .split-bar-fill.c1 { background: linear-gradient(90deg, #0D9E74, #5AE8B4); }
+        .split-bar-fill.c2 { background: linear-gradient(90deg, #C97B20, #F0AA32); }
+        .split-bar-fill.c3 { background: linear-gradient(90deg, #C93030, #F08080); }
+        .split-bar-fill.c4 { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
+
+        /* Schema info */
+        .schema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .schema-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 12px; }
+        .schema-name { font-size: 0.62rem; font-weight: 700; color: var(--muted2); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .schema-desc { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
+        .schema-cols  { font-size: 0.62rem; color: var(--accent); margin-top: 4px; font-family: var(--mono); }
+
+        /* Light mode */
+        body.light-mode { background: #EEF2F8; color: #1A2535; }
+        body.light-mode .cis-sidebar, body.light-mode .top-navbar { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .stat-card, body.light-mode .cis-card { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .nav-item { color: #4A607A; }
+        body.light-mode .nav-item.active { background: #EAF2FF; color: #1D4ED8; border-left-color: #2563EB; }
+        body.light-mode .nav-item:hover:not(.active) { background: #F2F7FF; color: #1E293B; }
+        body.light-mode .stat-number { color: #1D4ED8; }
+        body.light-mode .stat-number.red    { color: #B91C1C; }
+        body.light-mode .stat-number.green  { color: #047857; }
+        body.light-mode .stat-number.orange { color: #B45309; }
+        body.light-mode .ds-table td { color: #334155; }
+        body.light-mode .ds-table th { color: #6A88A8; }
+        body.light-mode .ds-table tr:hover td { background: rgba(0,0,0,0.02); }
+        body.light-mode .ds-bar-wrap { background: #CCDAE8; }
+        body.light-mode .schema-item { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .schema-desc { color: #4A607A; }
+        body.light-mode .split-bar-track { background: #CCDAE8; }
+        body.light-mode .logo-text { color: #0F172A; }
+        body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
+        body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
+        body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
+        body.light-mode .theme-toggle .tt-icon.tt-sun  { color: #D97706; }
+        body.light-mode .donut-label { color: #334155; }
+        footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
+        body.light-mode footer { border-top-color: #CCDAE8; }
+
+        @media (max-width: 1100px) {
+            .main-grid, .bottom-grid { grid-template-columns: 1fr; }
+            .cis-sidebar { width: 190px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .schema-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="cis-wrapper">
+
+    <!-- Sidebar -->
+    <div class="cis-sidebar">
+        <div class="logo-area">
+            <div class="logo-icon"><img src="/web-icon.png" alt="CatchFish"></div>
+            <div class="logo-text">CatchFish<span class="logo-sub">Phishing Detection</span></div>
+        </div>
+        <div class="nav-section">Navigation</div>
+        <div class="nav-menu">
+            <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>SOC Overview</span></a>
+            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
+            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
+            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
+            <a href="/mail-dashboard" class="nav-item"><i class="fas fa-envelope-open-text"></i><span>Mail Console</span></a>
+        </div>
+        <div class="nav-section">ML Pipeline</div>
+        <div class="nav-menu">
+            <a href="/dataset" class="nav-item active"><i class="fas fa-database"></i><span>Dataset</span></a>
+            <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="cis-main">
+
+        <!-- Top bar -->
+        <div class="top-navbar">
+            <div class="page-title"><i class="fas fa-database"></i> Dataset Overview</div>
+            <div>
+                <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
+                    <span class="tt-pill"></span>
+                    <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
+                    <span class="tt-icon tt-sun"><i class="fas fa-sun"></i></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Total Rows</div>
+                <div class="stat-number" id="statTotalRows">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Datasets Loaded</div>
+                <div class="stat-number green" id="statDatasets">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Phishing Rows</div>
+                <div class="stat-number red" id="statPhishRows">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Legitimate Rows</div>
+                <div class="stat-number orange" id="statLegitRows">—</div>
+            </div>
+        </div>
+
+        <!-- Main grid -->
+        <div class="main-grid">
+
+            <!-- Dataset table -->
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-table"></i> Loaded Datasets</div>
+                <div class="card-body" style="padding:0">
+                    <table class="ds-table" id="dsTable">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Rows</th>
+                                <th>Phishing %</th>
+                                <th style="width:100px">Distribution</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dsTableBody">
+                            <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Donut chart -->
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-chart-pie"></i> Overall Distribution</div>
+                <div class="card-body">
+                    <div class="donut-wrap">
+                        <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110">
+                            <circle cx="55" cy="55" r="42" fill="none" stroke="#1B2535" stroke-width="14"/>
+                            <circle id="donutPhish" cx="55" cy="55" r="42" fill="none"
+                                stroke="#C93030" stroke-width="14"
+                                stroke-dasharray="0 264"
+                                stroke-dashoffset="66"
+                                stroke-linecap="round"
+                                style="transition: stroke-dasharray 0.8s cubic-bezier(0.34,1.1,0.64,1); transform-origin:center; transform:rotate(-90deg)"/>
+                            <circle id="donutSafe" cx="55" cy="55" r="42" fill="none"
+                                stroke="#0D9E74" stroke-width="14"
+                                stroke-dasharray="0 264"
+                                stroke-dashoffset="66"
+                                stroke-linecap="round"
+                                style="transition: stroke-dasharray 0.8s cubic-bezier(0.34,1.1,0.64,1); transform-origin:center; transform:rotate(-90deg)"/>
+                            <text x="55" y="51" text-anchor="middle" font-size="11" fill="#C8D6E8" font-family="Consolas,monospace" font-weight="700" id="donutCenterPct">—</text>
+                            <text x="55" y="63" text-anchor="middle" font-size="7.5" fill="#546880" font-family="Inter,sans-serif">phishing</text>
+                        </svg>
+                        <div class="donut-legend">
+                            <div class="donut-row">
+                                <span class="donut-dot" style="background:#0D9E74"></span>
+                                <span class="donut-label">Legitimate</span>
+                                <span class="donut-val" id="donutLegitCount">—</span>
+                            </div>
+                            <div class="donut-row">
+                                <span class="donut-dot" style="background:#C93030"></span>
+                                <span class="donut-label">Phishing</span>
+                                <span class="donut-val" id="donutPhishCount">—</span>
+                            </div>
+                            <div class="donut-row" style="margin-top:4px; border-top:1px solid var(--border); padding-top:8px">
+                                <span class="donut-dot" style="background:#2E7DD3"></span>
+                                <span class="donut-label">Total</span>
+                                <span class="donut-val" id="donutTotalCount">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Per-dataset stacked bars -->
+                    <div style="margin-top:14px">
+                        <div style="font-size:0.57rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:9px">Rows per Dataset</div>
+                        <div class="split-bar-list" id="splitBarList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom grid: Schema Info | Preprocessing -->
+        <div class="bottom-grid">
+
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-file-code"></i> Supported Dataset Schemas</div>
+                <div class="card-body">
+                    <div class="schema-grid">
+                        <div class="schema-item">
+                            <div class="schema-name">Schema A — Original Format</div>
+                            <div class="schema-desc">Used by Enron, Ling, Nazario, SpamAssassin, Nigerian Fraud and similar raw dumps. Body text is in a <code style="font-family:var(--mono);color:var(--accent)">body</code> column; sender extracted from a <code style="font-family:var(--mono);color:var(--accent)">sender</code> field.</div>
+                            <div class="schema-cols">columns: sender · body · subject · label</div>
+                        </div>
+                        <div class="schema-item">
+                            <div class="schema-name">Schema B — Pre-Processed Format</div>
+                            <div class="schema-desc">Pre-engineered datasets that already contain computed columns. Accepted directly — no re-extraction needed. The loader auto-detects which schema applies per file.</div>
+                            <div class="schema-cols">columns: email_text · sender_domain · has_attachment · links_count · urgent_keywords · label</div>
+                        </div>
+                        <div class="schema-item">
+                            <div class="schema-name">Label Normalisation</div>
+                            <div class="schema-desc">Both numeric and text labels are accepted. Mapping handles case-insensitive variants automatically.</div>
+                            <div class="schema-cols">1 / phishing / spam / malicious → phishing<br>0 / legitimate / ham / safe / benign → legitimate</div>
+                        </div>
+                        <div class="schema-item">
+                            <div class="schema-name">Deduplication</div>
+                            <div class="schema-desc">After merging all CSVs, exact duplicates are removed on (email_text, subject) before training to avoid data leakage and inflated metrics.</div>
+                            <div class="schema-cols">80 / 20 stratified train-test split · random_state=42</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cis-card">
+                <div class="card-header"><i class="fas fa-gears"></i> Preprocessing Pipeline</div>
+                <div class="card-body">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
+                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#60A5FA;margin-bottom:5px"><i class="fas fa-font" style="margin-right:5px"></i>Text Vectorisation — HashingVectorizer</div>
+                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">Applied to <strong style="color:var(--text)">email_text</strong> and <strong style="color:var(--text)">subject</strong>. Uses 2¹⁶ = 65 536 hash buckets, unigrams + bigrams, English stop-word removal. No vocabulary storage — stateless and memory-efficient.</div>
+                        </div>
+                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
+                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#A78BFA;margin-bottom:5px"><i class="fas fa-at" style="margin-right:5px"></i>Domain Vectorisation — HashingVectorizer</div>
+                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">Applied to <strong style="color:var(--text)">sender_domain</strong> with 512 buckets — small enough to not dominate but sufficient to encode domain patterns (TLD, depth, hyphenation).</div>
+                        </div>
+                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
+                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#34D399;margin-bottom:5px"><i class="fas fa-sliders" style="margin-right:5px"></i>Numeric Scaling — StandardScaler</div>
+                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">All 19 engineered numeric features are zero-mean unit-variance scaled. This prevents large-magnitude features (e.g. email_length) from dominating gradient updates in linear and boosting models.</div>
+                        </div>
+                        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px">
+                            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#FBBF24;margin-bottom:5px"><i class="fas fa-weight-hanging" style="margin-right:5px"></i>Class Imbalance Handling</div>
+                            <div style="font-size:0.72rem;color:var(--muted2);line-height:1.5">Sample weights applied for Gradient Boosting and XGBoost. Tree-based models use <code style="font-family:var(--mono);color:var(--accent)">class_weight="balanced"</code>. Logistic Regression likewise. Prevents models from defaulting to the majority class.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer><i class="fas fa-database"></i> Dataset — CatchFish Real-time ML Phishing Detection System</footer>
+    </div>
+</div>
+
+<script>
+    // ── Helpers ─────────────────────────────────────────────────────────────────
+    function animateCounter(el, target, duration = 700) {
+        const start = parseInt(el.textContent.replace(/[^0-9]/g, '')) || 0;
+        if (start === target) { el.textContent = target.toLocaleString(); return; }
+        const startTime = performance.now();
+        (function step(now) {
+            const p = Math.min((now - startTime) / duration, 1);
+            const e = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(start + (target - start) * e).toLocaleString();
+            if (p < 1) requestAnimationFrame(step);
+        })(performance.now());
+    }
+
+    function applyTheme(t) { document.body.classList.toggle('light-mode', t === 'light'); }
+    function initTheme() {
+        const t = localStorage.getItem('sjTheme') || 'dark';
+        applyTheme(t);
+        document.getElementById('themeToggle')?.addEventListener('click', () => {
+            const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+            localStorage.setItem('sjTheme', next);
+            applyTheme(next);
+        });
+    }
+    window.addEventListener('storage', e => { if (e.key === 'sjTheme') applyTheme(e.newValue || 'dark'); });
+    initTheme();
+
+    // ── Dataset metadata from /api/model-info ────────────────────────────────
+    const KNOWN_STATS = {
+        'Enron.csv':         { rows: 33716, phish: 16545, legit: 17171 },
+        'Ling.csv':          { rows: 2893,  phish: 481,   legit: 2412  },
+        'Nazario.csv':       { rows: 1565,  phish: 1565,  legit: 0     },
+        'Nigerian_Fraud.csv':{ rows: 2299,  phish: 2299,  legit: 0     },
+        'SpamAssasin.csv':   { rows: 9348,  phish: 4150,  legit: 5198  },
+    };
+    const DS_COLORS = ['c0','c1','c2','c3','c4'];
+
+    async function loadDataset() {
+        let info = {};
+        try {
+            info = await fetch('/api/model-info').then(r => r.json());
+        } catch(e) {}
+
+        const datasets = info.datasets_used || [];
+        const totalRows = info.total_rows || 0;
+
+        // Build per-dataset rows using known stats if available
+        const dsRows = datasets.map(name => {
+            const k = KNOWN_STATS[name];
+            return k ? { name, ...k } : { name, rows: Math.round(totalRows / Math.max(datasets.length, 1)), phish: null, legit: null };
+        });
+
+        const totalPhish = dsRows.reduce((s, r) => s + (r.phish || 0), 0);
+        const totalLegit  = dsRows.reduce((s, r) => s + (r.legit  || 0), 0);
+        const displayTotal = totalRows || (totalPhish + totalLegit);
+
+        // Stats
+        animateCounter(document.getElementById('statTotalRows'),  displayTotal);
+        animateCounter(document.getElementById('statDatasets'),    datasets.length);
+        animateCounter(document.getElementById('statPhishRows'),   totalPhish);
+        animateCounter(document.getElementById('statLegitRows'),   totalLegit);
+
+        // Table
+        const tbody = document.getElementById('dsTableBody');
+        if (!dsRows.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No dataset info available</td></tr>';
+        } else {
+            tbody.innerHTML = dsRows.map(r => {
+                const phishPct = r.phish !== null && r.rows ? ((r.phish / r.rows) * 100).toFixed(1) : '—';
+                const legitPct = r.legit !== null && r.rows ? ((r.legit / r.rows) * 100).toFixed(1) : '—';
+                const hasPhish = r.phish !== null;
+                const hasLegit = r.legit !== null;
+                const type = !hasLegit ? 'phishing' : (!hasPhish ? 'legit-b' : 'mixed');
+                const typeLabel = type === 'phishing' ? 'Phishing' : type === 'legit-b' ? 'Legitimate' : 'Mixed';
+                const phishW = hasPhish ? Math.round((r.phish / r.rows) * 100) : 50;
+                return `<tr>
+                    <td><span class="ds-name">${r.name}</span></td>
+                    <td style="font-family:var(--mono);font-size:0.75rem">${r.rows.toLocaleString()}</td>
+                    <td style="font-family:var(--mono);font-size:0.75rem;color:var(--red)">${phishPct}${phishPct !== '—' ? '%' : ''}</td>
+                    <td>
+                        <div class="ds-bar-wrap">
+                            <div class="ds-bar-fill phish" data-width="${phishW}" style="width:0%"></div>
+                        </div>
+                    </td>
+                    <td><span class="ds-badge ${type}">${typeLabel}</span></td>
+                </tr>`;
+            }).join('');
+            // Animate table bars
+            setTimeout(() => {
+                tbody.querySelectorAll('.ds-bar-fill').forEach(bar => {
+                    bar.style.width = bar.dataset.width + '%';
+                });
+            }, 80);
+        }
+
+        // Donut chart
+        const circumference = 2 * Math.PI * 42; // ≈ 263.9
+        const phishFrac = displayTotal ? (totalPhish / displayTotal) : 0;
+        const legitFrac = displayTotal ? (totalLegit / displayTotal) : 0;
+        const phishDash = phishFrac * circumference;
+        const legitDash = legitFrac * circumference;
+        const phishPctDisp = displayTotal ? Math.round(phishFrac * 100) : 0;
+
+        document.getElementById('donutCenterPct').textContent = phishPctDisp + '%';
+        document.getElementById('donutPhishCount').textContent = totalPhish.toLocaleString();
+        document.getElementById('donutLegitCount').textContent = totalLegit.toLocaleString();
+        document.getElementById('donutTotalCount').textContent = displayTotal.toLocaleString();
+
+        // Animate donut: phishing segment first, then legitimate offset behind it
+        setTimeout(() => {
+            const phishEl = document.getElementById('donutPhish');
+            const safeEl  = document.getElementById('donutSafe');
+            if (phishEl) phishEl.setAttribute('stroke-dasharray', `${phishDash} ${circumference - phishDash}`);
+            if (safeEl) {
+                safeEl.setAttribute('stroke-dasharray', `${legitDash} ${circumference - legitDash}`);
+                // Offset safe segment to start right after phishing
+                safeEl.setAttribute('stroke-dashoffset', circumference - phishDash + (circumference * 0.25));
+            }
+        }, 120);
+
+        // Split bars
+        const splitList = document.getElementById('splitBarList');
+        if (dsRows.length && splitList) {
+            const maxRows = Math.max(...dsRows.map(r => r.rows), 1);
+            splitList.innerHTML = dsRows.map((r, i) => {
+                const pct = Math.round((r.rows / maxRows) * 100);
+                const color = DS_COLORS[i % DS_COLORS.length];
+                return `<div class="split-bar-item">
+                    <div class="split-bar-label">
+                        <span class="split-bar-name">${r.name}</span>
+                        <span class="split-bar-pct">${r.rows.toLocaleString()} rows</span>
+                    </div>
+                    <div class="split-bar-track">
+                        <div class="split-bar-fill ${color}" data-pct="${pct}" style="width:0%"></div>
+                    </div>
+                </div>`;
+            }).join('');
+            setTimeout(() => {
+                splitList.querySelectorAll('.split-bar-fill').forEach((bar, i) => {
+                    setTimeout(() => { bar.style.width = bar.dataset.pct + '%'; }, i * 60);
+                });
+            }, 200);
+        }
+    }
+
+    loadDataset();
+</script>
+</body>
+</html>

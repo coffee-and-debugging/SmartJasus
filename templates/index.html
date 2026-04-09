@@ -243,16 +243,18 @@
         .chart-bar {
             width: 100%; min-width: 14px; border-radius: 3px 3px 2px 2px;
             background: linear-gradient(180deg, #2E7DD3 0%, #1A4A96 100%);
+            height: 0; transition: height 0.55s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
         .chart-bar.alt { background: linear-gradient(180deg, #0D9E74 0%, #0A6A50 100%); }
         .chart-label { font-size: 0.58rem; color: var(--muted); text-align: center; }
-        .chart-value { font-size: 0.62rem; color: var(--muted2); font-family: var(--mono); font-weight: 600; }
+        .chart-value { font-size: 0.62rem; color: var(--muted2); font-family: var(--mono); font-weight: 600; transition: opacity 0.3s; }
 
         .pie-wrap { display: flex; align-items: center; gap: 16px; min-height: 100px; }
         .pie-chart {
             width: 96px; height: 96px; border-radius: 50%;
             background: conic-gradient(#0D9E74 0deg, #0D9E74 360deg, #C93030 360deg);
             border: 1px solid var(--border2); flex-shrink: 0;
+            transition: background 0.7s ease;
         }
         .pie-legend { display: grid; gap: 7px; width: 100%; }
         .legend-row {
@@ -263,7 +265,7 @@
         .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
         .legend-dot.safe  { background: var(--green); }
         .legend-dot.phish { background: var(--red); }
-        .legend-count { font-family: var(--mono); font-weight: 700; color: var(--text); }
+        .legend-count { font-family: var(--mono); font-weight: 700; color: var(--text); transition: color 0.3s; }
 
         /* ── Analytics extra stats ───────────────────────────────── */
         .analytics-stats-row {
@@ -371,6 +373,12 @@
             <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
             <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
             <a href="/mail-dashboard" class="nav-item"><i class="fas fa-envelope-open-text"></i><span>Mail Console</span></a>
+        </div>
+        <div class="nav-section">ML Pipeline</div>
+        <div class="nav-menu">
+            <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
+            <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
         </div>
     </div>
 
@@ -626,10 +634,14 @@
             ? Math.round((allItems.reduce((sum, i) => sum + Number(i.confidence || 0), 0) / allItems.length) * 100)
             : 0;
 
-        document.getElementById('globalThreats').innerText = phishCount;
-        document.getElementById('globalSafe').innerText    = safeCount;
-        document.getElementById('globalEmails').innerText  = totalEmails;
-        document.getElementById('globalAvgConf').innerText = totalEmails ? `${avgConfidence}%` : '—';
+        const elThreats = document.getElementById('globalThreats');
+        const elSafe    = document.getElementById('globalSafe');
+        const elEmails  = document.getElementById('globalEmails');
+        const elConf    = document.getElementById('globalAvgConf');
+        if (elThreats) animateCounter(elThreats, phishCount);
+        if (elSafe)    animateCounter(elSafe, safeCount);
+        if (elEmails)  animateCounter(elEmails, totalEmails);
+        if (elConf)    elConf.textContent = totalEmails ? `${avgConfidence}%` : '—';
     }
 
     function getThreatItemsByFilter(allItems) {
@@ -766,7 +778,21 @@
             .finally(() => { syncInProgress = false; });
     }
 
-    function renderBarChart(containerId, rows) {
+    function animateCounter(el, target, duration = 600) {
+        const start = parseInt(el.textContent) || 0;
+        if (start === target) return;
+        const startTime = performance.now();
+        function step(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(start + (target - start) * ease);
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function renderBarChart(containerId, rows, colorAlt) {
         const container = document.getElementById(containerId);
         if (!container) return;
         if (!rows.length) {
@@ -775,14 +801,27 @@
         }
         const max = Math.max(...rows.map(r => r.value), 1);
         container.innerHTML = rows.map((row, idx) => {
-            const height = Math.max(6, Math.round((row.value / max) * 62));
-            const alt = idx % 2 === 1 ? ' alt' : '';
+            const alt = (colorAlt || idx % 2 === 1) ? ' alt' : '';
             return `<div class="chart-col">
-                <div class="chart-value">${row.value}</div>
-                <div class="chart-bar${alt}" style="height:${height}px"></div>
+                <div class="chart-value" style="opacity:0">${row.value}</div>
+                <div class="chart-bar${alt}" style="height:0px" data-target="${Math.max(6, Math.round((row.value / max) * 62))}"></div>
                 <div class="chart-label">${escapeHtml(row.label)}</div>
             </div>`;
         }).join('');
+        // Animate bars after paint
+        requestAnimationFrame(() => {
+            container.querySelectorAll('.chart-bar').forEach((bar, i) => {
+                const target = bar.dataset.target;
+                setTimeout(() => {
+                    bar.style.height = target + 'px';
+                }, i * 40);
+            });
+            container.querySelectorAll('.chart-value').forEach((val, i) => {
+                setTimeout(() => {
+                    val.style.opacity = '1';
+                }, i * 40 + 300);
+            });
+        });
     }
 
     function renderAnalytics(items) {
@@ -811,13 +850,23 @@
             const rate = dayItems.length ? Math.round((dayItems.filter(it => it.prediction === 'phishing').length / dayItems.length) * 100) : 0;
             return { label: row.label, value: rate };
         });
-        renderBarChart('chartPhishRate', phishRateRows);
+        renderBarChart('chartPhishRate', phishRateRows, true);
 
         // Inline stats
         const total = safeCount + phishCount;
         const phishRate = total ? Math.round((phishCount / total) * 100) : 0;
         const rateEl = document.getElementById('statPhishRate');
-        if (rateEl) rateEl.textContent = phishRate + '%';
+        if (rateEl) {
+            const prev = parseInt(rateEl.textContent) || 0;
+            const start = performance.now();
+            const dur = 600;
+            (function tick(now) {
+                const p = Math.min((now - start) / dur, 1);
+                const e = 1 - Math.pow(1 - p, 3);
+                rateEl.textContent = Math.round(prev + (phishRate - prev) * e) + '%';
+                if (p < 1) requestAnimationFrame(tick);
+            })(start);
+        }
     }
 
     function renderPieChart(safeCount, phishCount) {
@@ -827,10 +876,25 @@
         if (!pie) return;
 
         const total   = safeCount + phishCount;
-        const safeDeg = total ? Math.round((safeCount / total) * 360) : 360;
-        pie.style.background = `conic-gradient(#0D9E74 0deg, #0D9E74 ${safeDeg}deg, #C93030 ${safeDeg}deg, #C93030 360deg)`;
-        if (safeLabel)  safeLabel.textContent  = String(safeCount);
-        if (phishLabel) phishLabel.textContent = String(phishCount);
+        // Animate from 0 to final angle
+        let currentDeg = parseFloat(pie.dataset.currentDeg || '360');
+        const targetDeg = total ? Math.round((safeCount / total) * 360) : 360;
+        pie.dataset.currentDeg = targetDeg;
+
+        const duration = 700;
+        const startTime = performance.now();
+        function animatePie(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            const deg = Math.round(currentDeg + (targetDeg - currentDeg) * ease);
+            pie.style.background = `conic-gradient(#0D9E74 0deg, #0D9E74 ${deg}deg, #C93030 ${deg}deg, #C93030 360deg)`;
+            if (progress < 1) requestAnimationFrame(animatePie);
+        }
+        requestAnimationFrame(animatePie);
+
+        if (safeLabel)  animateCounter(safeLabel,  safeCount);
+        if (phishLabel) animateCounter(phishLabel, phishCount);
     }
 
     function applyTheme(theme) {

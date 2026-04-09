@@ -475,6 +475,21 @@ def password_breach_checker_page():
     return render_template("password_breach_checker.html")
 
 
+@app.route("/dataset")
+def dataset_page():
+    return render_template("dataset.html")
+
+
+@app.route("/feature-extraction")
+def feature_extraction_page():
+    return render_template("feature_extraction.html")
+
+
+@app.route("/model")
+def model_page():
+    return render_template("model.html")
+
+
 @app.route("/web-icon.png")
 def web_icon():
     return send_from_directory("templates", "icon.png")
