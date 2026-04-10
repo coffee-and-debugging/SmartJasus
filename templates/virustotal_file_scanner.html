@@ -273,7 +273,6 @@
         body.light-mode footer { border-top-color: #CCDAE8; }
         body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
         body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
-        body.light-mode .server-status { background: #F2F6FC; border-color: #C4D4E8; }
         body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
         body.light-mode .theme-toggle .tt-icon.tt-sun { color: #D97706; }
     </style>
@@ -311,11 +310,7 @@
     <div class="cis-main">
         <div class="top-navbar">
             <div class="page-title"><i class="fas fa-virus-slash"></i> VirusTotal File Scanner</div>
-            <div class="nav-tools">
-                <div class="server-status">
-                    <span class="status-dot" id="serverDot"></span>
-                    <span id="serverText">Local SMTP</span>
-                </div>
+            <div class="nav-tools"> 
                 <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
                     <span class="tt-pill"></span>
                     <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
@@ -601,20 +596,6 @@
         }
     }
 
-    async function checkLocalServerStatus() {
-        try {
-            const d = await fetchJSON('/api/local-server-status');
-            const up = !!d.local_server_up;
-            const dot = document.getElementById('serverDot');
-            const text = document.getElementById('serverText');
-            dot.classList.toggle('active', up);
-            text.textContent = up ? `Local SMTP ${d.host}:${d.port}` : 'Local SMTP offline';
-        } catch (e) {
-            document.getElementById('serverDot').classList.remove('active');
-            document.getElementById('serverText').textContent = 'Local SMTP unknown';
-        }
-    }
-
     function setupThemeToggle() {
         const key = 'sjTheme';
         const toggle = document.getElementById('themeToggle');
@@ -663,13 +644,7 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        setupThemeToggle();
-        setupDropZone();
-        checkLocalServerStatus();
-        setInterval(checkLocalServerStatus, 10000);
-        renderStats();
-    });
+    
 </script>
 <script>(function(){var b=document.getElementById('navAlertBadge');if(!b)return;function getRead(){try{return new Set(JSON.parse(localStorage.getItem('sjAlertsRead')||'[]'));}catch{return new Set();}}fetch('/api/alerts?limit=500').then(r=>r.json()).then(d=>{var items=Array.isArray(d)?d:(d.items||[]);var n=items.filter(a=>!getRead().has(String(a.id))).length;if(n>0){b.textContent=n>99?'99+':n;b.classList.add('visible');}}).catch(()=>{});})();</script>
 </body>

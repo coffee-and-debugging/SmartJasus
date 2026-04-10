@@ -41,6 +41,11 @@
         .page-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
         .page-title i { color: var(--accent); }
         .theme-toggle { display: inline-flex; align-items: center; background: #050810; border: 1px solid #1B2535; border-radius: 999px; padding: 3px; cursor: pointer; position: relative; height: 28px; width: 64px; transition: border-color 0.15s; }
+        .theme-toggle:hover { border-color: var(--accent); }
+        .theme-toggle .tt-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 20px; border-radius: 999px; font-size: 0.68rem; position: relative; z-index: 1; transition: color 0.2s; }
+        .theme-toggle .tt-icon.tt-moon { color: #6A88A8; }
+        .theme-toggle .tt-icon.tt-sun  { color: #3A5070; }
+        .theme-toggle .tt-pill { position: absolute; top: 3px; left: 3px; width: 26px; height: 20px; border-radius: 999px; background: #1A2535; transition: transform 0.2s cubic-bezier(.4,0,.2,1); box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
         .nav-tools { display: flex; align-items: center; gap: 8px; }
         .server-status { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 5px 11px; font-size: 0.73rem; color: var(--muted2); }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
