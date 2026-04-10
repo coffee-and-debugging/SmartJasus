@@ -83,6 +83,28 @@ LEGITIMATE_DOMAINS: set = _load_json_set("legitimate_domains.json", "domains")
 SUSPICIOUS_TLDS: set = _load_json_set("suspicious_tlds.json", "tlds")
 URL_SHORTENERS: set = _load_json_set("url_shorteners.json", "shorteners")
 
+_SYNTHETIC_CSV_RE = re.compile(r"^dataset\d+\.csv$", re.IGNORECASE)
+
+
+def _discover_realworld_dataset_csvs() -> list[str]:
+    """Return real dataset CSV names, skipping synthetic datasetN.csv files."""
+    try:
+        return sorted(
+            f for f in os.listdir(_DATASET)
+            if f.lower().endswith(".csv") and not _SYNTHETIC_CSV_RE.match(f)
+        )
+    except Exception:
+        return []
+
+
+def _count_csv_rows(path: str) -> int:
+    """Count data rows in a CSV file (excluding header)."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            return max(sum(1 for _ in f) - 1, 0)
+    except Exception:
+        return 0
+
 # Ensure local domain is always trusted
 LEGITIMATE_DOMAINS.add(LOCAL_DOMAIN)
 
@@ -112,7 +134,25 @@ _model_meta = {}
 def load_model() -> None:
     global _model_pipeline, _model_meta
     model_path = os.path.join(_BASE, "models", "phishing_detection.pkl")
+
+    needs_retrain = False
     if not os.path.exists(model_path):
+        needs_retrain = True
+    else:
+        # Check if the saved model's threshold matches the current one
+        try:
+            existing = joblib.load(model_path)
+            saved_threshold = None
+            if isinstance(existing, dict) and "meta" in existing:
+                saved_threshold = existing["meta"].get("threshold")
+            if saved_threshold is None or abs(float(saved_threshold) - PHISHING_THRESHOLD) > 1e-9:
+                print(f"[CatchFish] Threshold changed "
+                      f"(saved={saved_threshold}, env={PHISHING_THRESHOLD}) — retraining …")
+                needs_retrain = True
+        except Exception:
+            needs_retrain = True
+
+    if needs_retrain:
         from train import train_and_save_model
         train_and_save_model(threshold=PHISHING_THRESHOLD)
 
@@ -690,12 +730,23 @@ def get_stats():
 @app.route("/api/model-info", methods=["GET"])
 def model_info():
     """Return trained model metadata."""
+    datasets_used = _model_meta.get("datasets_used") or _discover_realworld_dataset_csvs()
+
+    total_rows = _model_meta.get("total_rows", 0)
+    if (not total_rows) and datasets_used:
+        total_rows = sum(
+            _count_csv_rows(os.path.join(_DATASET, fname))
+            for fname in datasets_used
+        )
+
     return jsonify({
-        "model_name": _model_meta.get("model_name", "unknown"),
-        "threshold": _model_meta.get("threshold", PHISHING_THRESHOLD),
-        "auc": _model_meta.get("auc"),
-        "f1": _model_meta.get("f1"),
-        "results_all": _model_meta.get("results_all", {}),
+        "model_name":    _model_meta.get("model_name", "unknown"),
+        "threshold":     _model_meta.get("threshold", PHISHING_THRESHOLD),
+        "auc":           _model_meta.get("auc"),
+        "f1":            _model_meta.get("f1"),
+        "results_all":   _model_meta.get("results_all", {}),
+        "datasets_used": datasets_used,
+        "total_rows":    total_rows,
     })
 
 
