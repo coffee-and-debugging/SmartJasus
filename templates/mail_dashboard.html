@@ -213,6 +213,14 @@
         }
         .input-group input::placeholder,
         .input-group textarea::placeholder { color: #364C66; opacity: 1; }
+        .input-group input:-webkit-autofill,
+        .input-group input:-webkit-autofill:hover,
+        .input-group input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #C8D8EC;
+            box-shadow: 0 0 0 1000px var(--input-bg) inset;
+            -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset;
+            transition: background-color 9999s ease-out 0s;
+        }
         .input-group input:focus,
         .input-group textarea:focus,
         .input-group select:focus {
@@ -429,6 +437,13 @@
         body.light-mode .input-group input,
         body.light-mode .input-group textarea,
         body.light-mode .search-bar { background: #F4F7FC; border-color: #BDD0E4; color: #0F172A; }
+        body.light-mode .input-group input:-webkit-autofill,
+        body.light-mode .input-group input:-webkit-autofill:hover,
+        body.light-mode .input-group input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #0F172A;
+            box-shadow: 0 0 0 1000px #F4F7FC inset;
+            -webkit-box-shadow: 0 0 0 1000px #F4F7FC inset;
+        }
         body.light-mode .input-group input::placeholder,
         body.light-mode .input-group textarea::placeholder { color: #8BA0B8; }
         body.light-mode .search-bar input { color: #0F172A; }
@@ -578,6 +593,7 @@
         <div class="nav-section">Overview</div>
         <div class="nav-menu">
             <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
+            <a href="/alerts" class="nav-item"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span></a>
         </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
@@ -655,7 +671,7 @@
                         </div>
                         <div class="input-group" style="margin-bottom:0">
                             <label>To</label>
-                            <input type="text" id="toAddress" placeholder="recipient@domain">
+                            <input type="text" id="toAddress" placeholder="recipient@domain" autocomplete="off">
                         </div>
                     </div>
                     <div class="input-group" style="margin-top:9px">

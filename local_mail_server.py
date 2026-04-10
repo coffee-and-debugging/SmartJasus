@@ -317,13 +317,19 @@ class MailStore:
             cursor.close()
         return [dict(zip(cols, row)) for row in rows]
 
-    def get_alerts(self, limit: int = 100) -> List[Dict]:
+    def get_alerts(self, limit: int = 200, recipient: str = None) -> List[Dict]:
         with self._connect() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT * FROM emails WHERE prediction = 'phishing' ORDER BY received_at DESC LIMIT %s",
-                (limit,),
-            )
+            if recipient:
+                cursor.execute(
+                    "SELECT * FROM emails WHERE prediction = 'phishing' AND LOWER(recipient) = %s ORDER BY received_at DESC LIMIT %s",
+                    (recipient.lower(), limit),
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM emails WHERE prediction = 'phishing' ORDER BY received_at DESC LIMIT %s",
+                    (limit,),
+                )
             cols = [c[0] for c in cursor.description]
             rows = cursor.fetchall()
             cursor.close()

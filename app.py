@@ -530,6 +530,11 @@ def model_page():
     return render_template("model.html")
 
 
+@app.route("/alerts")
+def alerts_page():
+    return render_template("alerts.html")
+
+
 @app.route("/web-icon.png")
 def web_icon():
     return send_from_directory("templates", "icon.png")
@@ -705,8 +710,9 @@ def mailbox(recipient):
 
 @app.route("/api/alerts", methods=["GET"])
 def alerts():
-    limit = max(1, min(int(request.args.get("limit", 100)), 500))
-    return jsonify({"items": mail_store.get_alerts(limit=limit)})
+    limit     = max(1, min(int(request.args.get("limit", 200)), 1000))
+    recipient = request.args.get("recipient", "").strip().lower() or None
+    return jsonify({"items": mail_store.get_alerts(limit=limit, recipient=recipient)})
 
 
 @app.route("/api/activity", methods=["GET"])
