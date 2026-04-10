@@ -74,6 +74,8 @@
         .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
         .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
         .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+        .nav-badge { margin-left:auto; background:#C93030; color:#fff; font-size:0.55rem; font-weight:700; min-width:16px; height:16px; padding:0 4px; border-radius:8px; display:none; align-items:center; justify-content:center; line-height:1; }
+        .nav-badge.visible { display:flex; }
 
         .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
 
@@ -88,17 +90,6 @@
             display: flex; align-items: center; gap: 8px;
         }
         .page-title i { color: var(--accent); }
-        .nav-tools { display: flex; align-items: center; gap: 8px; }
-
-        .server-status {
-            display: flex; align-items: center; gap: 7px;
-            background: var(--surface2); border: 1px solid var(--border);
-            border-radius: 4px; padding: 5px 11px;
-            font-size: 0.73rem; color: var(--muted2);
-        }
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
-        .status-dot.active { background: var(--green); }
-
         .theme-toggle {
             display: inline-flex; align-items: center;
             background: #050810; border: 1px solid #1B2535;
@@ -282,6 +273,7 @@
         body.light-mode footer { border-top-color: #CCDAE8; }
         body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
         body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
+        body.light-mode .server-status { background: #F2F6FC; border-color: #C4D4E8; }
         body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
         body.light-mode .theme-toggle .tt-icon.tt-sun { color: #D97706; }
     </style>
@@ -296,7 +288,7 @@
         <div class="nav-section">Overview</div>
         <div class="nav-menu">
             <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
-            <a href="/alerts" class="nav-item"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span></a>
+            <a href="/alerts" class="nav-item" id="navAlerts"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span><span class="nav-badge" id="navAlertBadge"></span></a>
         </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
@@ -679,5 +671,6 @@
         renderStats();
     });
 </script>
+<script>(function(){var b=document.getElementById('navAlertBadge');if(!b)return;function getRead(){try{return new Set(JSON.parse(localStorage.getItem('sjAlertsRead')||'[]'));}catch{return new Set();}}fetch('/api/alerts?limit=500').then(r=>r.json()).then(d=>{var items=Array.isArray(d)?d:(d.items||[]);var n=items.filter(a=>!getRead().has(String(a.id))).length;if(n>0){b.textContent=n>99?'99+':n;b.classList.add('visible');}}).catch(()=>{});})();</script>
 </body>
 </html>

@@ -74,6 +74,8 @@
         .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
         .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
         .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+        .nav-badge { margin-left:auto; background:#C93030; color:#fff; font-size:0.55rem; font-weight:700; min-width:16px; height:16px; padding:0 4px; border-radius:8px; display:none; align-items:center; justify-content:center; line-height:1; }
+        .nav-badge.visible { display:flex; }
 
         /* ── Main ───────────────────────────────────────────────── */
         .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
@@ -378,7 +380,7 @@
         <div class="nav-section">Overview</div>
         <div class="nav-menu">
             <a href="/" class="nav-item active"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
-            <a href="/alerts" class="nav-item"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span></a>
+            <a href="/alerts" class="nav-item" id="navAlerts"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span><span class="nav-badge" id="navAlertBadge"></span></a>
         </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
@@ -995,6 +997,17 @@
     setInterval(syncInboxInBackground, 180000);
     setInterval(updateServerStatus, 4000);
     setInterval(pushRecordsToDatabase, 30000);
+</script>
+<script>
+(function(){
+    var b=document.getElementById('navAlertBadge');if(!b)return;
+    function getRead(){try{return new Set(JSON.parse(localStorage.getItem('sjAlertsRead')||'[]'));}catch{return new Set();}}
+    fetch('/api/alerts?limit=500').then(r=>r.json()).then(d=>{
+        var items=Array.isArray(d)?d:(d.items||[]);
+        var n=items.filter(a=>!getRead().has(String(a.id))).length;
+        if(n>0){b.textContent=n>99?'99+':n;b.classList.add('visible');}
+    }).catch(()=>{});
+})();
 </script>
 </body>
 </html>

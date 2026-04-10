@@ -33,17 +33,19 @@
         .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
         .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
         .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+        .nav-badge { margin-left:auto; background:#C93030; color:#fff; font-size:0.55rem; font-weight:700; min-width:16px; height:16px; padding:0 4px; border-radius:8px; display:none; align-items:center; justify-content:center; line-height:1; }
+        .nav-badge.visible { display:flex; }
 
         .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
         .top-navbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 16px; margin-bottom: 14px; }
         .page-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
         .page-title i { color: var(--accent); }
         .theme-toggle { display: inline-flex; align-items: center; background: #050810; border: 1px solid #1B2535; border-radius: 999px; padding: 3px; cursor: pointer; position: relative; height: 28px; width: 64px; transition: border-color 0.15s; }
-        .theme-toggle:hover { border-color: var(--accent); }
-        .theme-toggle .tt-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 20px; border-radius: 999px; font-size: 0.68rem; position: relative; z-index: 1; transition: color 0.2s; }
-        .theme-toggle .tt-icon.tt-moon { color: #6A88A8; }
-        .theme-toggle .tt-icon.tt-sun  { color: #3A5070; }
-        .theme-toggle .tt-pill { position: absolute; top: 3px; left: 3px; width: 26px; height: 20px; border-radius: 999px; background: #1A2535; transition: transform 0.2s cubic-bezier(.4,0,.2,1); box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        .nav-tools { display: flex; align-items: center; gap: 8px; }
+        .server-status { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 5px 11px; font-size: 0.73rem; color: var(--muted2); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+        .status-dot.active { background: var(--green); animation: pulse 1.4s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(13,158,116,0.4); } 70% { box-shadow: 0 0 0 5px rgba(13,158,116,0); } }
 
         /* Stats */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -157,6 +159,7 @@
         body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
         body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
         body.light-mode .theme-toggle .tt-icon.tt-sun  { color: #D97706; }
+        body.light-mode .server-status { background: #F2F6FC; border-color: #C4D4E8; }
         body.light-mode .thresh-track { background: linear-gradient(90deg, #047857 0%, #92400E 60%, #991B1B 80%, #991B1B 100%); }
         body.light-mode .thresh-marker { background: #1E293B; }
         body.light-mode .thresh-info-item { background: #F4F7FC; border-color: #CCDAE8; }
@@ -228,7 +231,7 @@
         <div class="nav-section">Overview</div>
         <div class="nav-menu">
             <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
-            <a href="/alerts" class="nav-item"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span></a>
+            <a href="/alerts" class="nav-item" id="navAlerts"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span><span class="nav-badge" id="navAlertBadge"></span></a>
         </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
@@ -254,7 +257,11 @@
         <!-- Top bar -->
         <div class="top-navbar">
             <div class="page-title"><i class="fas fa-brain"></i> ML Model &amp; Performance</div>
-            <div>
+            <div class="nav-tools">
+                <div class="server-status">
+                    <span class="status-dot" id="serverDot"></span>
+                    <span id="serverText">Local SMTP</span>
+                </div>
                 <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
                     <span class="tt-pill"></span>
                     <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
@@ -596,7 +603,26 @@
         });
     }
 
+    async function initLocalServerStatus() {
+        try {
+            const resp = await fetch('/api/local-server-status');
+            const data = await resp.json();
+            const up = !!data.local_server_up;
+            const dot = document.getElementById('serverDot');
+            const text = document.getElementById('serverText');
+            if (dot) dot.classList.toggle('active', up);
+            if (text) text.textContent = up ? 'Local SMTP Up' : 'SMTP Offline';
+        } catch {
+            const dot = document.getElementById('serverDot');
+            const text = document.getElementById('serverText');
+            if (dot) dot.classList.remove('active');
+            if (text) text.textContent = 'SMTP Offline';
+        }
+    }
+
     loadModel();
+    initLocalServerStatus();
 </script>
+<script>(function(){var b=document.getElementById('navAlertBadge');if(!b)return;function getRead(){try{return new Set(JSON.parse(localStorage.getItem('sjAlertsRead')||'[]'));}catch{return new Set();}}fetch('/api/alerts?limit=500').then(r=>r.json()).then(d=>{var items=Array.isArray(d)?d:(d.items||[]);var n=items.filter(a=>!getRead().has(String(a.id))).length;if(n>0){b.textContent=n>99?'99+':n;b.classList.add('visible');}}).catch(()=>{});})();</script>
 </body>
 </html>

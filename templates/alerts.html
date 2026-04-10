@@ -30,16 +30,30 @@
         .logo-sub { font-size: 0.59rem; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
         .nav-section { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); padding: 14px 8px 5px; }
         .nav-menu { display: flex; flex-direction: column; gap: 1px; }
-        .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 4px; color: var(--muted2); font-size: 0.8rem; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.1s, color 0.1s; border-left: 2px solid transparent; }
+        .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 4px; color: var(--muted2); font-size: 0.8rem; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.1s, color 0.1s; border-left: 2px solid transparent; position: relative; }
         .nav-item i { width: 15px; font-size: 0.82rem; flex-shrink: 0; }
         .nav-item.active { background: rgba(46,125,211,0.1); color: #60A5FA; border-left-color: var(--accent); }
         .nav-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text); }
+        /* Unread badge */
+        .nav-badge {
+            margin-left: auto; background: var(--red); color: #fff;
+            font-size: 0.55rem; font-weight: 700; font-family: var(--mono);
+            min-width: 16px; height: 16px; padding: 0 4px;
+            border-radius: 8px; display: none; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        .nav-badge.visible { display: flex; }
 
         /* ── Main ── */
         .cis-main { flex: 1; padding: 16px 20px; overflow-x: hidden; min-width: 0; }
         .top-navbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 16px; margin-bottom: 14px; }
         .page-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
         .page-title i { color: var(--red); }
+        .nav-tools { display: flex; align-items: center; gap: 8px; }
+        .server-status { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 5px 11px; font-size: 0.73rem; color: var(--muted2); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+        .status-dot.active { background: var(--green); animation: pulse 1.4s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(13,158,116,0.4); } 70% { box-shadow: 0 0 0 5px rgba(13,158,116,0); } }
         .theme-toggle { display: inline-flex; align-items: center; background: #050810; border: 1px solid #1B2535; border-radius: 999px; padding: 3px; cursor: pointer; position: relative; height: 28px; width: 64px; transition: border-color 0.15s; }
         .theme-toggle:hover { border-color: var(--accent); }
         .theme-toggle .tt-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 20px; border-radius: 999px; font-size: 0.68rem; position: relative; z-index: 1; transition: color 0.2s; }
@@ -47,8 +61,25 @@
         .theme-toggle .tt-icon.tt-sun  { color: #3A5070; }
         .theme-toggle .tt-pill { position: absolute; top: 3px; left: 3px; width: 26px; height: 20px; border-radius: 999px; background: #1A2535; transition: transform 0.2s cubic-bezier(.4,0,.2,1); box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 
+        /* ── Filter pills ── */
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; align-items: center; }
+        .filter-pill {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 4px; font-size: 0.72rem;
+            font-weight: 600; cursor: pointer; border: 1px solid var(--border2);
+            background: var(--surface2); color: var(--muted2);
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+            white-space: nowrap; user-select: none;
+        }
+        .filter-pill:hover { color: var(--text); border-color: var(--accent); }
+        .filter-pill.active { background: rgba(46,125,211,0.14); color: #60A5FA; border-color: rgba(46,125,211,0.4); }
+        .filter-pill.user-pill.active { background: rgba(201,48,48,0.12); color: #F08080; border-color: rgba(201,48,48,0.4); }
+        .filter-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+        .filter-count { font-size: 0.62rem; font-family: var(--mono); background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 3px; }
+        .filter-unread { font-size: 0.58rem; font-family: var(--mono); background: var(--red); color: #fff; padding: 1px 5px; border-radius: 8px; line-height: 1.4; }
+
         /* ── Stats ── */
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
         .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; }
         .stat-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 7px; }
         .stat-number { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; color: var(--accent); line-height: 1; }
@@ -62,54 +93,34 @@
         .card-header i { color: var(--red); font-size: 0.7rem; }
         .card-body { padding: 14px; }
 
-        /* ── Filter bar ── */
-        .filter-bar { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; align-items: center; }
-        .filter-pill {
-            display: flex; align-items: center; gap: 6px;
-            padding: 5px 12px; border-radius: 4px; font-size: 0.72rem;
-            font-weight: 600; cursor: pointer; border: 1px solid var(--border2);
-            background: var(--surface2); color: var(--muted2);
-            transition: background 0.12s, color 0.12s, border-color 0.12s;
-            white-space: nowrap;
-        }
-        .filter-pill:hover { color: var(--text); border-color: var(--accent); }
-        .filter-pill.active { background: rgba(201,48,48,0.12); color: #F08080; border-color: rgba(201,48,48,0.4); }
-        .filter-pill.active.all { background: rgba(46,125,211,0.12); color: #60A5FA; border-color: rgba(46,125,211,0.35); }
-        .filter-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-        .filter-count { font-size: 0.62rem; font-family: var(--mono); background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; }
-
         /* ── Alert list ── */
-        .alert-list { display: flex; flex-direction: column; gap: 6px; max-height: 70vh; overflow-y: auto; padding-right: 4px; }
+        .alert-list { display: flex; flex-direction: column; gap: 6px; max-height: 68vh; overflow-y: auto; padding-right: 4px; }
         .alert-item {
             background: var(--surface2); border: 1px solid var(--border);
             border-left: 3px solid var(--red);
-            border-radius: 5px; padding: 11px 14px; cursor: default;
-            transition: border-color 0.12s, transform 0.12s;
+            border-radius: 5px; padding: 11px 14px; cursor: pointer;
+            transition: border-color 0.12s, transform 0.12s, background 0.12s;
             opacity: 0; transform: translateY(6px);
             animation: alertIn 0.28s ease forwards;
+            position: relative;
         }
-        .alert-item:hover { border-color: rgba(201,48,48,0.6); transform: translateY(-1px); }
+        .alert-item:hover { border-color: rgba(201,48,48,0.7); transform: translateY(-1px); background: rgba(201,48,48,0.05); }
+        .alert-item.unread::after {
+            content: ''; position: absolute; top: 10px; right: 10px;
+            width: 7px; height: 7px; border-radius: 50%; background: var(--red);
+        }
         @keyframes alertIn {
             from { opacity: 0; transform: translateY(6px); }
             to   { opacity: 1; transform: translateY(0); }
         }
         .alert-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
         .alert-subject { font-weight: 700; font-size: 0.82rem; color: var(--text); word-break: break-word; flex: 1; }
-        .alert-prob { font-family: var(--mono); font-size: 0.75rem; font-weight: 700; color: #F08080; white-space: nowrap; flex-shrink: 0; }
+        .alert-prob { font-family: var(--mono); font-size: 0.75rem; font-weight: 700; color: #F08080; white-space: nowrap; flex-shrink: 0; padding-right: 14px; }
         .alert-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.63rem; color: var(--muted); margin-bottom: 5px; }
         .alert-meta span { display: flex; align-items: center; gap: 4px; }
         .alert-meta i { font-size: 0.6rem; }
-        .alert-rules { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-        .rule-chip {
-            font-size: 0.58rem; font-weight: 600; padding: 2px 7px;
-            border-radius: 3px; background: rgba(201,48,48,0.12);
-            color: #F08080; border: 1px solid rgba(201,48,48,0.25);
-        }
-        .rule-chip.trusted { background: rgba(13,158,116,0.1); color: #5AE8B4; border-color: rgba(13,158,116,0.25); }
-        .rule-chip.ip-url { background: rgba(201,48,48,0.18); color: #FF6B6B; }
-        .rule-chip.shortener { background: rgba(201,123,32,0.14); color: #F0AA32; border-color: rgba(201,123,32,0.3); }
-        .rule-chip.tld { background: rgba(124,58,237,0.12); color: #A78BFA; border-color: rgba(124,58,237,0.3); }
-        .rule-chip.digits { background: rgba(130,153,181,0.12); color: var(--muted2); }
+        .prob-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+        .prob-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #C93030, #F08080); width: 0; transition: width 0.6s cubic-bezier(0.34,1.1,0.64,1); }
 
         /* ── Empty state ── */
         .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
@@ -117,9 +128,75 @@
         .empty-state-title { font-size: 0.9rem; font-weight: 600; color: var(--muted2); margin-bottom: 6px; }
         .empty-state-sub { font-size: 0.72rem; }
 
-        /* ── Prob bar ── */
-        .prob-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 6px; }
-        .prob-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #C93030, #F08080); width: 0; transition: width 0.6s cubic-bezier(0.34,1.1,0.64,1); }
+        /* ── Detail Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.72); z-index: 900;
+            align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--surface); border: 1px solid var(--border2);
+            border-radius: 8px; width: 100%; max-width: 680px; max-height: 90vh;
+            display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+            animation: modalIn 0.22s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.97) translateY(8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-header {
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .modal-title { font-size: 0.72rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+        .modal-title i { color: var(--red); }
+        .modal-close { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.1s, background 0.1s; }
+        .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+        .modal-body { padding: 18px; overflow-y: auto; flex: 1; }
+
+        /* Modal sections */
+        .m-section { margin-bottom: 18px; }
+        .m-section-title { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+        .m-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 0.75rem; }
+        .m-key { color: var(--muted); min-width: 100px; flex-shrink: 0; }
+        .m-val { color: var(--text); word-break: break-all; font-family: var(--mono); font-size: 0.73rem; }
+        .m-val.normal { font-family: inherit; font-size: 0.75rem; }
+
+        /* Risk badge */
+        .risk-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 4px; font-size: 0.68rem; font-weight: 700;
+        }
+        .risk-badge.critical { background: rgba(201,48,48,0.18); color: #FF6B6B; border: 1px solid rgba(201,48,48,0.4); }
+        .risk-badge.high     { background: rgba(201,123,32,0.18); color: #F0AA32; border: 1px solid rgba(201,123,32,0.4); }
+        .risk-badge.medium   { background: rgba(201,180,32,0.14); color: #E5D032; border: 1px solid rgba(201,180,32,0.3); }
+
+        /* Prob meter */
+        .prob-meter { margin: 10px 0 6px; }
+        .prob-meter-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .prob-meter-fill { height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(0.34,1.1,0.64,1); }
+        .prob-meter-labels { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--muted); margin-top: 4px; }
+
+        /* Feature grid */
+        .feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 7px; }
+        .feat-cell {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 4px; padding: 8px 10px;
+        }
+        .feat-cell-key { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
+        .feat-cell-val { font-family: var(--mono); font-size: 0.78rem; font-weight: 600; color: var(--accent); }
+        .feat-cell-val.warn { color: var(--orange); }
+        .feat-cell-val.danger { color: var(--red); }
+
+        /* Body preview */
+        .body-preview {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 4px; padding: 10px 12px; font-size: 0.72rem; color: var(--muted2);
+            font-family: var(--mono); white-space: pre-wrap; word-break: break-word;
+            max-height: 140px; overflow-y: auto; line-height: 1.6;
+        }
 
         /* ── Light mode ── */
         body.light-mode { background: #EEF2F8; color: #1A2535; }
@@ -140,24 +217,37 @@
         body.light-mode .logo-sub { color: #64748B; }
         body.light-mode .logo-area { border-bottom-color: #CCDAE8; }
         body.light-mode .alert-item { background: #FEF2F2; border-color: #FECACA; border-left-color: #B91C1C; }
-        body.light-mode .alert-item:hover { border-color: #EF4444; }
+        body.light-mode .alert-item:hover { background: #FEE2E2; border-color: #EF4444; }
         body.light-mode .alert-subject { color: #0F172A; }
         body.light-mode .alert-prob { color: #B91C1C; }
         body.light-mode .alert-meta { color: #4A607A; }
         body.light-mode .prob-bar-wrap { background: #FECACA; }
-        body.light-mode .filter-pill { background: #F4F7FC; border-color: #CCDAE8; color: #334155; }
-        body.light-mode .filter-pill:hover { color: #0F172A; border-color: #2563EB; }
-        body.light-mode .filter-pill.active { background: rgba(185,28,28,0.08); color: #B91C1C; border-color: rgba(185,28,28,0.35); }
-        body.light-mode .filter-pill.active.all { background: rgba(37,99,235,0.08); color: #1D4ED8; border-color: rgba(37,99,235,0.3); }
-        body.light-mode .rule-chip { background: rgba(185,28,28,0.08); color: #B91C1C; border-color: rgba(185,28,28,0.2); }
-        body.light-mode .rule-chip.trusted { background: rgba(4,120,87,0.08); color: #047857; }
-        body.light-mode .rule-chip.shortener { background: rgba(180,83,9,0.08); color: #B45309; }
-        body.light-mode .rule-chip.tld { background: rgba(109,40,217,0.08); color: #6D28D9; }
-        body.light-mode .rule-chip.digits { color: #334155; background: #F1F5F9; }
+        body.light-mode .server-status { background: #F2F6FC; border-color: #C4D4E8; }
         body.light-mode .theme-toggle { background: #E0EAF5; border-color: #B5C8DC; }
         body.light-mode .theme-toggle .tt-pill { background: #FFF; transform: translateX(30px); }
         body.light-mode .theme-toggle .tt-icon.tt-moon { color: #8A9DB8; }
         body.light-mode .theme-toggle .tt-icon.tt-sun  { color: #D97706; }
+
+        body.light-mode .modal-box { background: #FFFFFF; border-color: #CCDAE8; }
+        body.light-mode .modal-header { border-bottom-color: #CCDAE8; }
+        body.light-mode .modal-title { color: #1E293B; }
+        body.light-mode .modal-close { color: #64748B; }
+        body.light-mode .modal-close:hover { background: #F0F4FA; color: #0F172A; }
+        body.light-mode .m-section-title { color: #64748B; border-bottom-color: #CCDAE8; }
+        body.light-mode .m-key { color: #64748B; }
+        body.light-mode .m-val { color: #0F172A; }
+        body.light-mode .m-val.normal { color: #0F172A; }
+        body.light-mode .feat-cell { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .feat-cell-key { color: #64748B; }
+        body.light-mode .feat-cell-val { color: #1D4ED8; }
+        body.light-mode .body-preview { background: #F4F7FC; border-color: #CCDAE8; color: #334155; }
+        body.light-mode .prob-meter-track { background: #FECACA; }
+        body.light-mode .prob-meter-labels { color: #64748B; }
+        body.light-mode .filter-pill { background: #F4F7FC; border-color: #CCDAE8; color: #334155; }
+        body.light-mode .filter-pill:hover { color: #0F172A; border-color: #2563EB; }
+        body.light-mode .filter-pill.active { background: rgba(37,99,235,0.09); color: #1D4ED8; border-color: rgba(37,99,235,0.35); }
+        body.light-mode .filter-pill.user-pill.active { background: rgba(185,28,28,0.09); color: #B91C1C; border-color: rgba(185,28,28,0.35); }
+        body.light-mode .filter-count { background: rgba(0,0,0,0.07); }
         footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
         body.light-mode footer { border-top-color: #CCDAE8; color: #4A607A; }
 
@@ -179,19 +269,21 @@
         <div class="nav-section">Overview</div>
         <div class="nav-menu">
             <a href="/" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>Overview</span></a>
-            <a href="/alerts" class="nav-item active"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span></a>
-        </div>
-        <div class="nav-section">Security Intelligence</div>
-        <div class="nav-menu">
-            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
-            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
-            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
+            <a href="/alerts" class="nav-item active"><i class="fas fa-bell"></i><span>Alerts &amp; Notifications</span>
+                <span class="nav-badge" id="navBadge"></span>
+            </a>
         </div>
         <div class="nav-section">ML Pipeline</div>
         <div class="nav-menu">
             <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
             <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
+        </div>
+        <div class="nav-section">Security Intelligence</div>
+        <div class="nav-menu">
+            <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
+            <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
+            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
         </div>
         <div class="nav-section">Console</div>
         <div class="nav-menu">
@@ -205,7 +297,11 @@
         <!-- Top bar -->
         <div class="top-navbar">
             <div class="page-title"><i class="fas fa-bell"></i> Alerts &amp; Notifications</div>
-            <div>
+            <div class="nav-tools">
+                <div class="server-status">
+                    <span class="status-dot" id="serverDot"></span>
+                    <span id="serverText">Local SMTP</span>
+                </div>
                 <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
                     <span class="tt-pill"></span>
                     <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
@@ -217,37 +313,33 @@
         <!-- Stats -->
         <div class="stats-row">
             <div class="stat-card">
-                <div class="stat-label">Total Alerts</div>
+                <div class="stat-label">Total Phishing Detected</div>
                 <div class="stat-number red" id="statTotal">—</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Showing</div>
-                <div class="stat-number" id="statShowing">—</div>
+                <div class="stat-label">Unread Alerts</div>
+                <div class="stat-number orange" id="statUnread">—</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Avg. Probability</div>
-                <div class="stat-number orange" id="statAvgProb">—</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Active Filter</div>
-                <div class="stat-number green" id="statFilter" style="font-size:1rem;line-height:1.4">All</div>
+                <div class="stat-label">Avg. Phishing Probability</div>
+                <div class="stat-number red" id="statAvgProb">—</div>
             </div>
         </div>
 
-        <!-- Filter bar + Alert feed -->
+        <!-- Alert feed -->
         <div class="cis-card">
             <div class="card-header"><i class="fas fa-triangle-exclamation"></i> Phishing Detections</div>
             <div class="card-body">
                 <!-- User filter pills -->
                 <div class="filter-bar" id="filterBar">
-                    <div class="filter-pill all active" data-user="all">
-                        <span class="filter-dot"></span> All Users
+                    <div class="filter-pill active" data-user="all">
+                        <span class="filter-dot"></span>
+                        <span>All Users</span>
                         <span class="filter-count" id="pillCountAll">0</span>
                     </div>
                     <!-- per-user pills injected by JS -->
                 </div>
 
-                <!-- Alert list -->
                 <div class="alert-list" id="alertList">
                     <div class="empty-state" id="loadingState">
                         <i class="fas fa-circle-notch fa-spin"></i>
@@ -258,6 +350,17 @@
         </div>
 
         <footer><i class="fas fa-bell"></i> Alerts — CatchFish Real-time ML Phishing Detection System</footer>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fas fa-shield-halved"></i> Phishing Analysis</div>
+            <button class="modal-close" id="modalClose" title="Close"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
     </div>
 </div>
 
@@ -278,17 +381,36 @@
     document.querySelectorAll('.nav-item.active').forEach(el => {
         el.addEventListener('click', e => e.preventDefault());
     });
+    // Wire static All pill (present in HTML from page load)
+    document.querySelector('[data-user="all"]').addEventListener('click', () => setFilter('all'));
 
-    // ── Data ─────────────────────────────────────────────────────────────────
-    let ALL_ALERTS = [];       // full list from API
-    let activeUser = 'all';    // current filter
+    // ── Read tracking (stored by email id) ───────────────────────────────────
+    function getReadSet() {
+        try { return new Set(JSON.parse(localStorage.getItem('sjAlertsRead') || '[]')); }
+        catch { return new Set(); }
+    }
+    function markRead(id) {
+        const s = getReadSet();
+        s.add(String(id));
+        localStorage.setItem('sjAlertsRead', JSON.stringify([...s]));
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let ALL_ALERTS = [];
+    let activeUser = 'all';
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     function formatDate(raw) {
         if (!raw) return '—';
         try {
-            const d = new Date(raw);
-            return d.toLocaleString(undefined, {
-                month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'
+            return new Date(raw).toLocaleString(undefined, {
+                year:'numeric', month:'short', day:'2-digit',
+                hour:'2-digit', minute:'2-digit'
             });
         } catch { return raw; }
     }
@@ -299,110 +421,51 @@
         return '#F0AA32';
     }
 
-    function ruleChipClass(rule) {
-        const r = rule.toLowerCase();
-        if (r.includes('trusted')) return 'trusted';
-        if (r.includes('ip-based') || r.includes('ip url')) return 'ip-url';
-        if (r.includes('shortener')) return 'shortener';
-        if (r.includes('tld')) return 'tld';
-        if (r.includes('digit')) return 'digits';
-        return '';
+    function riskLabel(p) {
+        if (p >= 0.85) return ['critical', 'Critical'];
+        if (p >= 0.70) return ['high', 'High'];
+        return ['medium', 'Medium'];
     }
 
-    function renderAlerts(alerts) {
-        const list = document.getElementById('alertList');
-
-        if (!alerts.length) {
-            list.innerHTML = `<div class="empty-state">
-                <i class="fas fa-shield-check"></i>
-                <div class="empty-state-title">No phishing alerts${activeUser !== 'all' ? ' for ' + activeUser : ''}</div>
-                <div class="empty-state-sub">All scanned emails passed detection for this filter.</div>
-            </div>`;
-            document.getElementById('statShowing').textContent = '0';
-            document.getElementById('statAvgProb').textContent = '—';
-            return;
-        }
-
-        const avgProb = alerts.reduce((s, a) => s + (a.probability || 0), 0) / alerts.length;
-        document.getElementById('statShowing').textContent = alerts.length.toLocaleString();
-        document.getElementById('statAvgProb').textContent = (avgProb * 100).toFixed(1) + '%';
-
-        list.innerHTML = '';
-        alerts.forEach((alert, idx) => {
-            const prob = parseFloat(alert.probability || 0);
-            const probPct = Math.round(prob * 100);
-            const color = probColor(prob);
-
-            // Parse rule adjustments
-            let rules = [];
-            try { rules = JSON.parse(alert.features_json ? '[]' : '[]'); } catch {}
-            // rules_applied is stored in scan_logs not emails — show probability as main indicator
-
-            const div = document.createElement('div');
-            div.className = 'alert-item';
-            div.style.animationDelay = Math.min(idx * 25, 400) + 'ms';
-
-            const sender = alert.sender || '—';
-            const recipient = alert.recipient || '—';
-            const subject = alert.subject || '(no subject)';
-            const time = formatDate(alert.received_at);
-
-            div.innerHTML = `
-                <div class="alert-top">
-                    <div class="alert-subject">${escHtml(subject)}</div>
-                    <div class="alert-prob" style="color:${color}">${probPct}%</div>
-                </div>
-                <div class="alert-meta">
-                    <span><i class="fas fa-user-slash"></i> ${escHtml(sender)}</span>
-                    <span><i class="fas fa-inbox"></i> ${escHtml(recipient)}</span>
-                    <span><i class="fas fa-clock"></i> ${time}</span>
-                    ${alert.has_attachment ? '<span><i class="fas fa-paperclip"></i> Attachment</span>' : ''}
-                    ${alert.links_count > 0 ? `<span><i class="fas fa-link"></i> ${alert.links_count} link${alert.links_count !== 1 ? 's' : ''}</span>` : ''}
-                </div>
-                <div class="prob-bar-wrap">
-                    <div class="prob-bar-fill" data-pct="${probPct}" style="width:0%;background:linear-gradient(90deg,#C93030,${color})"></div>
-                </div>`;
-            list.appendChild(div);
-        });
-
-        // Animate bars
-        setTimeout(() => {
-            list.querySelectorAll('.prob-bar-fill').forEach(b => {
-                b.style.width = b.dataset.pct + '%';
-            });
-        }, 100);
-    }
-
-    function escHtml(str) {
-        return String(str)
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    function buildFilterPills(alerts) {
-        // Count per recipient
-        const counts = {};
-        alerts.forEach(a => {
+    // ── Filter pills ─────────────────────────────────────────────────────────
+    function buildFilterPills(allAlerts) {
+        const readSet = getReadSet();
+        // Count per recipient (total + unread)
+        const totals = {}, unreads = {};
+        allAlerts.forEach(a => {
             const r = (a.recipient || '').toLowerCase();
-            counts[r] = (counts[r] || 0) + 1;
+            totals[r] = (totals[r] || 0) + 1;
+            if (!readSet.has(String(a.id))) unreads[r] = (unreads[r] || 0) + 1;
         });
 
         const bar = document.getElementById('filterBar');
-        // Update all-count
-        document.getElementById('pillCountAll').textContent = alerts.length;
+
+        // Update All pill count
+        const allUnread = allAlerts.filter(a => !readSet.has(String(a.id))).length;
+        document.getElementById('pillCountAll').textContent = allAlerts.length;
+        // Update/add unread badge on All pill
+        const allPill = bar.querySelector('[data-user="all"]');
+        let allUnreadBadge = allPill.querySelector('.filter-unread');
+        if (allUnread > 0) {
+            if (!allUnreadBadge) { allUnreadBadge = document.createElement('span'); allUnreadBadge.className = 'filter-unread'; allPill.appendChild(allUnreadBadge); }
+            allUnreadBadge.textContent = allUnread;
+        } else if (allUnreadBadge) {
+            allUnreadBadge.remove();
+        }
 
         // Remove old per-user pills
-        bar.querySelectorAll('.filter-pill:not(.all)').forEach(p => p.remove());
+        bar.querySelectorAll('.user-pill').forEach(p => p.remove());
 
-        // Add per-user pills sorted by count desc
-        Object.entries(counts)
+        // Add per-user pills sorted by total count desc
+        Object.entries(totals)
             .sort((a, b) => b[1] - a[1])
-            .forEach(([user, count]) => {
+            .forEach(([user, total]) => {
                 const pill = document.createElement('div');
-                pill.className = 'filter-pill';
+                pill.className = 'filter-pill user-pill' + (activeUser === user ? ' active' : '');
                 pill.dataset.user = user;
                 const shortUser = user.split('@')[0] || user;
-                pill.innerHTML = `<span class="filter-dot"></span> ${escHtml(shortUser)} <span class="filter-count">${count}</span>`;
+                const unreadCount = unreads[user] || 0;
+                pill.innerHTML = `<span class="filter-dot"></span><span>${escHtml(shortUser)}</span><span class="filter-count">${total}</span>${unreadCount > 0 ? `<span class="filter-unread">${unreadCount}</span>` : ''}`;
                 bar.appendChild(pill);
                 pill.addEventListener('click', () => setFilter(user));
             });
@@ -410,34 +473,239 @@
 
     function setFilter(user) {
         activeUser = user;
-        // Update pills
         document.querySelectorAll('.filter-pill').forEach(p => {
+            const isAll = p.dataset.user === 'all';
             p.classList.toggle('active', p.dataset.user === user);
+            if (isAll) p.classList.remove('user-pill');
         });
-        // Update stat
-        const shortUser = user === 'all' ? 'All' : (user.split('@')[0] || user);
-        document.getElementById('statFilter').textContent = shortUser;
-        // Filter alerts
         const filtered = user === 'all'
             ? ALL_ALERTS
             : ALL_ALERTS.filter(a => (a.recipient || '').toLowerCase() === user);
         renderAlerts(filtered);
     }
 
+    // ── Render list ──────────────────────────────────────────────────────────
+    function renderAlerts(alerts) {
+        const list = document.getElementById('alertList');
+        const readSet = getReadSet();
+
+        // Stats reflect current filtered view
+        const unread = alerts.filter(a => !readSet.has(String(a.id))).length;
+        document.getElementById('statTotal').textContent = alerts.length.toLocaleString();
+        document.getElementById('statUnread').textContent = unread.toLocaleString();
+        const avgProb = alerts.length
+            ? alerts.reduce((s, a) => s + (parseFloat(a.probability) || 0), 0) / alerts.length
+            : 0;
+        document.getElementById('statAvgProb').textContent = alerts.length ? (avgProb * 100).toFixed(1) + '%' : '—';
+
+        // Nav badge always reflects global unread (all alerts)
+        const globalUnread = ALL_ALERTS.filter(a => !readSet.has(String(a.id))).length;
+        const badge = document.getElementById('navBadge');
+        if (globalUnread > 0) {
+            badge.textContent = globalUnread > 99 ? '99+' : globalUnread;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+
+        if (!alerts.length) {
+            list.innerHTML = `<div class="empty-state">
+                <i class="fas fa-shield-check"></i>
+                <div class="empty-state-title">No phishing alerts${activeUser !== 'all' ? ' for ' + escHtml(activeUser.split('@')[0]) : ''}</div>
+                <div class="empty-state-sub">All scanned emails passed detection for this filter.</div>
+            </div>`;
+            return;
+        }
+
+        list.innerHTML = '';
+        alerts.forEach((alert, idx) => {
+            const prob = parseFloat(alert.probability || 0);
+            const probPct = Math.round(prob * 100);
+            const color = probColor(prob);
+            const isUnread = !readSet.has(String(alert.id));
+
+            const div = document.createElement('div');
+            div.className = 'alert-item' + (isUnread ? ' unread' : '');
+            div.style.animationDelay = Math.min(idx * 25, 400) + 'ms';
+            div.dataset.id = alert.id;
+
+            div.innerHTML = `
+                <div class="alert-top">
+                    <div class="alert-subject">${escHtml(alert.subject || '(no subject)')}</div>
+                    <div class="alert-prob" style="color:${color}">${probPct}%</div>
+                </div>
+                <div class="alert-meta">
+                    <span><i class="fas fa-user-slash"></i> ${escHtml(alert.sender || '—')}</span>
+                    <span><i class="fas fa-inbox"></i> ${escHtml(alert.recipient || '—')}</span>
+                    <span><i class="fas fa-clock"></i> ${formatDate(alert.received_at)}</span>
+                    ${alert.has_attachment ? '<span><i class="fas fa-paperclip"></i> Attachment</span>' : ''}
+                    ${alert.links_count > 0 ? `<span><i class="fas fa-link"></i> ${alert.links_count} link${alert.links_count !== 1 ? 's' : ''}</span>` : ''}
+                </div>
+                <div class="prob-bar-wrap">
+                    <div class="prob-bar-fill" data-pct="${probPct}" style="width:0%;background:linear-gradient(90deg,#C93030,${color})"></div>
+                </div>`;
+
+            div.addEventListener('click', () => openDetail(alert));
+            list.appendChild(div);
+        });
+
+        setTimeout(() => {
+            list.querySelectorAll('.prob-bar-fill').forEach(b => {
+                b.style.width = b.dataset.pct + '%';
+            });
+        }, 100);
+    }
+
+    // ── Detail modal ─────────────────────────────────────────────────────────
+    function openDetail(alert) {
+        // Mark as read
+        markRead(alert.id);
+        // Remove unread dot from this item in the list
+        const item = document.querySelector(`.alert-item[data-id="${alert.id}"]`);
+        if (item) item.classList.remove('unread');
+        // Rebuild pills so unread counts on pills update
+        buildFilterPills(ALL_ALERTS);
+        // Recount unread for stats + badge
+        const readSet = getReadSet();
+        const filtered = activeUser === 'all' ? ALL_ALERTS : ALL_ALERTS.filter(a => (a.recipient||'').toLowerCase() === activeUser);
+        const unread = filtered.filter(a => !readSet.has(String(a.id))).length;
+        document.getElementById('statUnread').textContent = unread.toLocaleString();
+        const globalUnread = ALL_ALERTS.filter(a => !readSet.has(String(a.id))).length;
+        const badge = document.getElementById('navBadge');
+        if (globalUnread > 0) {
+            badge.textContent = globalUnread > 99 ? '99+' : globalUnread;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+
+        const prob = parseFloat(alert.probability || 0);
+        const probPct = Math.round(prob * 100);
+        const color = probColor(prob);
+        const [riskCls, riskTxt] = riskLabel(prob);
+        const conf = Math.round(parseFloat(alert.confidence || 0) * 100);
+
+        // Parse features_json
+        let features = {};
+        try { features = JSON.parse(alert.features_json || '{}'); } catch {}
+
+        // Build feature cells — only non-zero / interesting
+        const FEAT_LABELS = {
+            url_count:         'URL Count',
+            links_count:       'Links Count',
+            has_attachment:    'Attachment',
+            html_tag_count:    'HTML Tags',
+            urgency_count:     'Urgency Words',
+            money_count:       'Money Words',
+            suspicious_words:  'Suspicious Words',
+            sender_domain_age: 'Domain Age',
+            digit_ratio:       'Digit Ratio',
+            caps_ratio:        'Caps Ratio',
+            special_char_count:'Special Chars',
+            word_count:        'Word Count',
+            avg_word_len:      'Avg Word Len',
+            exclamation_count: 'Exclamations',
+            question_count:    'Questions',
+            ip_in_url:         'IP in URL',
+            has_short_url:     'Short URL',
+            suspicious_tld:    'Suspicious TLD',
+            domain_mismatch:   'Domain Mismatch',
+        };
+
+        const featEntries = Object.entries(features).filter(([k, v]) => v !== null && v !== undefined);
+        const featHtml = featEntries.length ? `
+            <div class="feat-grid">
+                ${featEntries.map(([k, v]) => {
+                    const label = FEAT_LABELS[k] || k.replace(/_/g,' ');
+                    const num = parseFloat(v);
+                    const cls = num > 5 ? 'danger' : (num > 1 ? 'warn' : '');
+                    const display = typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(3)) : v;
+                    return `<div class="feat-cell">
+                        <div class="feat-cell-key">${escHtml(label)}</div>
+                        <div class="feat-cell-val ${cls}">${escHtml(String(display))}</div>
+                    </div>`;
+                }).join('')}
+            </div>` : '<div style="color:var(--muted);font-size:0.72rem;">No feature data stored.</div>';
+
+        // Body preview
+        const bodyText = (alert.body || '').trim();
+        const bodyHtml = bodyText
+            ? `<div class="body-preview">${escHtml(bodyText.slice(0, 1200))}${bodyText.length > 1200 ? '\n…(truncated)' : ''}</div>`
+            : '<div style="color:var(--muted);font-size:0.72rem;">No body content stored.</div>';
+
+        document.getElementById('modalBody').innerHTML = `
+            <!-- Risk summary -->
+            <div class="m-section">
+                <div class="m-section-title">Verdict</div>
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+                    <span class="risk-badge ${riskCls}"><i class="fas fa-skull-crossbones"></i> ${riskTxt} Risk</span>
+                    <span style="font-family:var(--mono);font-size:0.78rem;color:${color};font-weight:700;">${probPct}% phishing probability</span>
+                    <span style="font-size:0.72rem;color:var(--muted);">Confidence: <b style="color:var(--muted2)">${conf}%</b></span>
+                </div>
+                <div class="prob-meter">
+                    <div class="prob-meter-track">
+                        <div class="prob-meter-fill" id="meterFill" style="width:0%;background:linear-gradient(90deg,#C93030,${color})"></div>
+                    </div>
+                    <div class="prob-meter-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+                </div>
+            </div>
+
+            <!-- Email info -->
+            <div class="m-section">
+                <div class="m-section-title">Email Details</div>
+                <div class="m-row"><span class="m-key">Subject</span><span class="m-val normal">${escHtml(alert.subject || '(no subject)')}</span></div>
+                <div class="m-row"><span class="m-key">From</span><span class="m-val">${escHtml(alert.sender || '—')}</span></div>
+                <div class="m-row"><span class="m-key">To</span><span class="m-val">${escHtml(alert.recipient || '—')}</span></div>
+                <div class="m-row"><span class="m-key">Sender Domain</span><span class="m-val">${escHtml(alert.sender_domain || '—')}</span></div>
+                <div class="m-row"><span class="m-key">Received</span><span class="m-val normal">${formatDate(alert.received_at)}</span></div>
+                <div class="m-row"><span class="m-key">Attachment</span><span class="m-val normal">${alert.has_attachment ? 'Yes' : 'No'}</span></div>
+                <div class="m-row"><span class="m-key">Links</span><span class="m-val">${alert.links_count || 0}</span></div>
+            </div>
+
+            <!-- Extracted features -->
+            <div class="m-section">
+                <div class="m-section-title">Extracted Features</div>
+                ${featHtml}
+            </div>
+
+            <!-- Body preview -->
+            <div class="m-section">
+                <div class="m-section-title">Email Body Preview</div>
+                ${bodyHtml}
+            </div>
+        `;
+
+        document.getElementById('detailModal').classList.add('open');
+
+        // Animate meter
+        setTimeout(() => {
+            document.getElementById('meterFill').style.width = probPct + '%';
+        }, 60);
+    }
+
+    function closeModal() {
+        document.getElementById('detailModal').classList.remove('open');
+    }
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('detailModal').addEventListener('click', e => {
+        if (e.target === document.getElementById('detailModal')) closeModal();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
     // ── Load alerts ───────────────────────────────────────────────────────────
     async function loadAlerts() {
         try {
             const resp = await fetch('/api/alerts?limit=500');
             const data = await resp.json();
-            ALL_ALERTS = data.items || [];
+            ALL_ALERTS = Array.isArray(data) ? data : (data.items || []);
 
-            document.getElementById('statTotal').textContent = ALL_ALERTS.length.toLocaleString();
             buildFilterPills(ALL_ALERTS);
 
-            // attach click on "all" pill
-            document.querySelector('.filter-pill.all').addEventListener('click', () => setFilter('all'));
-
-            setFilter('all');
+            // Re-apply active filter so list stays on current user after refresh
+            const filtered = activeUser === 'all'
+                ? ALL_ALERTS
+                : ALL_ALERTS.filter(a => (a.recipient || '').toLowerCase() === activeUser);
+            renderAlerts(filtered);
         } catch (e) {
             document.getElementById('alertList').innerHTML = `<div class="empty-state">
                 <i class="fas fa-circle-exclamation"></i>
@@ -447,10 +715,28 @@
         }
     }
 
-    loadAlerts();
+    // ── Server status ────────────────────────────────────────────────────────
+    async function updateServerStatus() {
+        try {
+            const resp = await fetch('/api/local-server-status');
+            const data = await resp.json();
+            const up = !!data.local_server_up;
+            const dot  = document.getElementById('serverDot');
+            const text = document.getElementById('serverText');
+            if (dot)  dot.classList.toggle('active', up);
+            if (text) text.textContent = up ? 'Local SMTP Up' : 'SMTP Offline';
+        } catch {
+            const dot = document.getElementById('serverDot');
+            if (dot) dot.classList.remove('active');
+            const text = document.getElementById('serverText');
+            if (text) text.textContent = 'SMTP Offline';
+        }
+    }
 
-    // Auto-refresh every 30 seconds
+    loadAlerts();
     setInterval(loadAlerts, 30000);
+    updateServerStatus();
+    setInterval(updateServerStatus, 4000);
 </script>
 </body>
 </html>
