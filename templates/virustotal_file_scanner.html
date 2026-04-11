@@ -6,8 +6,10 @@
     <title>CatchFish | VirusTotal File Scanner</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>(function(){if(localStorage.getItem('sjTheme')==='light')document.documentElement.classList.add('light-mode-early');})();</script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html.light-mode-early body { background: #EEF2F8 !important; }
 
         :root {
             --bg: #080B0F;
@@ -644,7 +646,10 @@
         });
     }
 
-    
+    document.addEventListener('DOMContentLoaded', () => {
+        setupThemeToggle();
+        setupDropZone();
+    });
 </script>
 <script>(function(){var b=document.getElementById('navAlertBadge');if(!b)return;function getRead(){try{return new Set(JSON.parse(localStorage.getItem('sjAlertsRead')||'[]'));}catch{return new Set();}}fetch('/api/alerts?limit=500').then(r=>r.json()).then(d=>{var items=Array.isArray(d)?d:(d.items||[]);var n=items.filter(a=>!getRead().has(String(a.id))).length;if(n>0){b.textContent=n>99?'99+':n;b.classList.add('visible');}}).catch(()=>{});})();</script>
 </body>
