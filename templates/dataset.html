@@ -412,13 +412,6 @@
     });
 
     // ── Dataset metadata from /api/model-info ────────────────────────────────
-    const KNOWN_STATS = {
-        'Enron.csv':         { rows: 33716, phish: 16545, legit: 17171 },
-        'Ling.csv':          { rows: 2893,  phish: 481,   legit: 2412  },
-        'Nazario.csv':       { rows: 1565,  phish: 1565,  legit: 0     },
-        'Nigerian_Fraud.csv':{ rows: 2299,  phish: 2299,  legit: 0     },
-        'SpamAssasin.csv':   { rows: 9348,  phish: 4150,  legit: 5198  },
-    };
     const DS_COLORS = ['c0','c1','c2','c3','c4'];
 
     async function loadDataset() {
@@ -427,17 +420,21 @@
             info = await fetch('/api/model-info').then(r => r.json());
         } catch(e) {}
 
-        const datasets = info.datasets_used || [];
-        const totalRows = info.total_rows || 0;
+        const datasets   = info.datasets_used || [];
+        const perDataset = info.per_dataset   || {};
+        const totalRows  = info.total_rows    || 0;
 
-        // Build per-dataset rows using known stats if available
+        // Build per-dataset rows from real server-side counts
         const dsRows = datasets.map(name => {
-            const k = KNOWN_STATS[name];
-            return k ? { name, ...k } : { name, rows: Math.round(totalRows / Math.max(datasets.length, 1)), phish: null, legit: null };
+            const k = perDataset[name];
+            return k
+                ? { name, rows: k.rows, phish: k.phish, legit: k.legit }
+                : { name, rows: 0, phish: null, legit: null };
         });
 
-        const totalPhish = dsRows.reduce((s, r) => s + (r.phish || 0), 0);
-        const totalLegit  = dsRows.reduce((s, r) => s + (r.legit  || 0), 0);
+        // Use backend-computed post-dedup totals when available
+        const totalPhish  = info.phishing_rows   != null ? info.phishing_rows   : dsRows.reduce((s, r) => s + (r.phish || 0), 0);
+        const totalLegit  = info.legitimate_rows != null ? info.legitimate_rows : dsRows.reduce((s, r) => s + (r.legit  || 0), 0);
         const displayTotal = totalRows || (totalPhish + totalLegit);
 
         // Stats

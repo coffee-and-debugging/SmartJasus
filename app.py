@@ -746,13 +746,16 @@ def model_info():
         )
 
     return jsonify({
-        "model_name":    _model_meta.get("model_name", "unknown"),
-        "threshold":     _model_meta.get("threshold", PHISHING_THRESHOLD),
-        "auc":           _model_meta.get("auc"),
-        "f1":            _model_meta.get("f1"),
-        "results_all":   _model_meta.get("results_all", {}),
-        "datasets_used": datasets_used,
-        "total_rows":    total_rows,
+        "model_name":      _model_meta.get("model_name", "unknown"),
+        "threshold":       _model_meta.get("threshold", PHISHING_THRESHOLD),
+        "auc":             _model_meta.get("auc"),
+        "f1":              _model_meta.get("f1"),
+        "results_all":     _model_meta.get("results_all", {}),
+        "datasets_used":   datasets_used,
+        "total_rows":      total_rows,
+        "phishing_rows":   _model_meta.get("phishing_rows"),
+        "legitimate_rows": _model_meta.get("legitimate_rows"),
+        "per_dataset":     _model_meta.get("per_dataset", {}),
     })
 
 

@@ -231,12 +231,14 @@ def load_real_world_dataset() -> pd.DataFrame:
     print("[Train] Loading datasets …\n")
 
     parts = []
+    per_dataset = {}
     for fname in csv_files:
         fpath = os.path.join(_DATASET, fname)
         try:
             part = _load_any_csv(fpath)
             ph = int((part["label"] == 1).sum())
             lg = int((part["label"] == 0).sum())
+            per_dataset[fname] = {"rows": len(part), "phish": ph, "legit": lg}
             print(f"  {fname:30s} → {len(part):7,} rows  phishing={ph:,}  legitimate={lg:,}")
             parts.append(part)
         except Exception as e:
@@ -545,6 +547,9 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
         "average_precision":  results[best_name]["average_precision"],
         "datasets_used":      csv_files,
         "total_rows":         len(df),
+        "phishing_rows":      int(y.sum()),
+        "legitimate_rows":    int((y == 0).sum()),
+        "per_dataset":        per_dataset,
         "results_all":        results,
     }
     joblib.dump({"pipeline": best_pipeline, "meta": meta}, save_path, compress=3)
