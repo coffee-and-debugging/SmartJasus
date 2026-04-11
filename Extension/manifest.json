@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Smart Jasus",
+    "name": "Catch Fish",
     "version": "1.0",
     "description": "Detects phishing emails in Gmail",
     "permissions": ["scripting", "activeTab", "storage"],

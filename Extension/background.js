@@ -1,3 +1,3 @@
 chrome.runtime.onInstalled.addListener(() => {
-    console.log("Smart Jasus Extension Installed");
+    console.log("Catch Fish Extension Installed");
 });

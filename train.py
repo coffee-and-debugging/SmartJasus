@@ -6,7 +6,7 @@ Trains multiple classifiers on CSV datasets in dataset/,
 selects the best by F1-score at the production threshold,
 and saves the winner + full metadata to models/phishing_detection.pkl.
 
-Identical logic is reproduced in SmartJasus_RealWorld_Colab.ipynb —
+Identical logic is reproduced in CatchFish.ipynb —
 both files produce the exact same model given the same data and threshold.
 
 Synthetic files named datasetN.csv are automatically excluded.
