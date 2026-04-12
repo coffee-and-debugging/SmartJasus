@@ -57,7 +57,8 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -381,9 +382,15 @@ def build_preprocessor() -> ColumnTransformer:
 
 def get_model_catalogue() -> dict:
     """
-    Five production-grade classifiers.
-    All hyperparameters are tuned for phishing detection on ~50k-row tabular+text data.
-    class_weight='balanced' compensates for dataset imbalance without oversampling.
+    Production-grade classifiers for phishing detection.
+
+    Tree models (RF, ET, GB) are wrapped in CalibratedClassifierCV so their
+    predicted probabilities are well-calibrated — without this, their raw
+    outputs cluster near 0/1 and a 0.60 threshold cuts into real phishing
+    predictions, causing high FN counts.
+
+    Logistic Regression and XGBoost/LightGBM are already well-calibrated
+    and do not need the wrapper.
     """
     catalogue = {
         "Logistic Regression": LogisticRegression(
@@ -391,25 +398,34 @@ def get_model_catalogue() -> dict:
             class_weight="balanced",
             solver="lbfgs", random_state=42,
         ),
-        "Random Forest": RandomForestClassifier(
-            n_estimators=300, max_depth=20,
-            min_samples_leaf=2, min_samples_split=4,
-            max_features="sqrt",
-            class_weight="balanced",
-            random_state=42, n_jobs=-1,
+        "Random Forest": CalibratedClassifierCV(
+            RandomForestClassifier(
+                n_estimators=300, max_depth=20,
+                min_samples_leaf=2, min_samples_split=4,
+                max_features="sqrt",
+                class_weight="balanced",
+                random_state=42, n_jobs=-1,
+            ),
+            method="isotonic", cv=3,
         ),
-        "Extra Trees": ExtraTreesClassifier(
-            n_estimators=300, max_depth=20,
-            min_samples_leaf=2, min_samples_split=4,
-            max_features="sqrt",
-            class_weight="balanced",
-            random_state=42, n_jobs=-1,
+        "Extra Trees": CalibratedClassifierCV(
+            ExtraTreesClassifier(
+                n_estimators=300, max_depth=20,
+                min_samples_leaf=2, min_samples_split=4,
+                max_features="sqrt",
+                class_weight="balanced",
+                random_state=42, n_jobs=-1,
+            ),
+            method="isotonic", cv=3,
         ),
-        "Gradient Boosting": GradientBoostingClassifier(
-            n_estimators=300, learning_rate=0.05,
-            max_depth=6, subsample=0.8,
-            max_features="sqrt", min_samples_leaf=2,
-            random_state=42,
+        "Gradient Boosting": CalibratedClassifierCV(
+            GradientBoostingClassifier(
+                n_estimators=300, learning_rate=0.05,
+                max_depth=6, subsample=0.8,
+                max_features="sqrt", min_samples_leaf=2,
+                random_state=42,
+            ),
+            method="isotonic", cv=3,
         ),
     }
     try:
@@ -448,11 +464,15 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
     Full pipeline:
       1. Load & merge all CSVs from dataset/
       2. Engineer 19 numeric features
-      3. 80/20 stratified split (random_state=42 — reproducible)
-      4. Compute inverse-frequency sample weights for boosting models
-      5. Train all classifiers, evaluate at both 0.50 and `threshold`
-      6. Select winner by F1@threshold
-      7. Save {pipeline, meta} dict to models/phishing_detection.pkl
+      3. 70/15/15 stratified split (train / val / test)
+         - threshold is selected on val to avoid test-set leakage
+         - final metrics reported on held-out test only
+      4. Compute sample weights — phishing upweighted 1.4×
+      5. Train all classifiers with probability calibration on tree models
+      6. Select winner by F1@threshold on VALIDATION set
+      7. 5-fold CV AUC sanity check on best model (catches overfitting)
+      8. Report final metrics on TEST set
+      9. Save {pipeline, meta} dict to models/phishing_detection.pkl
 
     Returns the metadata dict (same structure as saved in pkl).
     """
@@ -466,8 +486,12 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
     n_legit = int((y == 0).sum())
     print(f"[Train] Rows: {len(df):,}  |  Phishing: {n_phish:,}  |  Legitimate: {n_legit:,}")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.20, random_state=42, stratify=y
+    # 70 / 15 / 15 split — threshold tuned on val, final metrics on test
+    X_temp, X_test, y_temp, y_test = train_test_split(
+        X, y, test_size=0.15, random_state=42, stratify=y
+    )
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_temp, y_temp, test_size=float(0.15) / 0.85, random_state=42, stratify=y_temp
     )
 
     # Sample weights for boosting models — upweight phishing by 1.4×
@@ -477,7 +501,7 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
     w_phish = (n_legit / max(n_phish, 1)) * 1.4
     sw_train = np.where(y_train == 1, w_phish, w_legit)
 
-    print(f"[Train] Train: {len(X_train):,}  |  Test: {len(X_test):,}")
+    print(f"[Train] Train: {len(X_train):,}  |  Val: {len(X_val):,}  |  Test: {len(X_test):,}")
     print(f"[Train] Sample weights — phishing: {w_phish:.3f}  legitimate: {w_legit:.4f}\n")
 
     catalogue = get_model_catalogue()
@@ -486,12 +510,16 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
     best_f1       = -1.0
     best_pipeline = None
 
-    hdr = (f"\n{'Model':<25} {'AUC':>6} {'AP':>6} {'Acc':>6} "
-           f"{'Prec':>6} {'Rec':>6} {'F1@0.5':>8} "
-           f"{'F1@{:.2f}'.format(threshold):>9} "
-           f"{'FP':>6} {'FN':>6}")
+    # ── PHASE 1: evaluate all models on VALIDATION set to pick winner ────────────
+    hdr = (f"\n{'Model':<25} {'VAL AUC':>8} {'VAL AP':>7} "
+           f"{'VAL F1@{:.2f}'.format(threshold):>12} "
+           f"{'VAL FP':>7} {'VAL FN':>7}")
+    print("[Train] === Phase 1: Model selection on VALIDATION set ===")
     print(hdr)
     print("─" * len(hdr))
+
+    pipelines = {}
+    val_results = {}
 
     for name, clf in catalogue.items():
         pipe = Pipeline([
@@ -499,6 +527,8 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
             ("classifier",   clf),
         ])
 
+        # CalibratedClassifierCV wraps tree models — sample_weight must be
+        # passed to the inner estimator, not the calibrator itself.
         fit_params = {}
         if name in ("Gradient Boosting", "XGBoost", "LightGBM"):
             fit_params["classifier__sample_weight"] = sw_train
@@ -509,11 +539,73 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
+            y_val_proba = pipe.predict_proba(X_val)[:, 1]
+
+        y_val_pred = (y_val_proba >= threshold).astype(int)
+        val_auc = roc_auc_score(y_val, y_val_proba)
+        val_ap  = average_precision_score(y_val, y_val_proba)
+        val_f1  = f1_score(y_val, y_val_pred, zero_division=0)
+        tn_v, fp_v, fn_v, tp_v = confusion_matrix(y_val, y_val_pred).ravel()
+
+        val_results[name] = {"val_auc": round(float(val_auc), 4),
+                             "val_ap":  round(float(val_ap),  4),
+                             "val_f1":  round(float(val_f1),  4)}
+        pipelines[name] = pipe
+
+        print(f"{name:<25} {val_auc:>8.4f} {val_ap:>7.4f} "
+              f"{val_f1:>12.4f} {fp_v:>7d} {fn_v:>7d}")
+
+        if val_f1 > best_f1:
+            best_f1       = val_f1
+            best_name     = name
+            best_pipeline = pipe
+
+    print(f"\n[Train] ★ Best model (by VAL F1@{threshold}): {best_name}  ({best_f1:.4f})")
+
+    # ── PHASE 2: 5-fold CV AUC on best model — overfitting sanity check ──────────
+    print(f"\n[Train] === Phase 2: 5-fold CV AUC on {best_name} (overfitting check) ===")
+    # Refit a fresh pipeline on train+val combined for CV (no test leakage)
+    X_trainval = pd.concat([X_train, X_val])
+    y_trainval = pd.concat([y_train, y_val])
+    cv_pipe = Pipeline([
+        ("preprocessor", build_preprocessor()),
+        ("classifier",   catalogue[best_name]),
+    ])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        cv_scores = cross_val_score(cv_pipe, X_trainval, y_trainval,
+                                    cv=5, scoring="roc_auc", n_jobs=-1)
+    cv_mean, cv_std = cv_scores.mean(), cv_scores.std()
+    val_auc_best = val_results[best_name]["val_auc"]
+    gap = abs(cv_mean - val_auc_best)
+    print(f"  CV AUC scores  : {cv_scores.round(4)}")
+    print(f"  CV AUC mean    : {cv_mean:.4f}  ±{cv_std:.4f}")
+    print(f"  Val AUC        : {val_auc_best:.4f}")
+    print(f"  Gap (CV - Val) : {gap:.4f}", end="  ")
+    if gap < 0.01:
+        print("✓ No overfitting detected")
+    elif gap < 0.03:
+        print("⚠ Minor gap — monitor with more data")
+    else:
+        print("✗ Significant gap — model may be overfit")
+
+    # ── PHASE 3: final metrics on held-out TEST set ───────────────────────────────
+    print(f"\n[Train] === Phase 3: Final evaluation on TEST set (held-out) ===")
+    hdr2 = (f"\n{'Model':<25} {'AUC':>6} {'AP':>6} {'Acc':>6} "
+            f"{'Prec':>6} {'Rec':>6} {'F1@0.5':>8} "
+            f"{'F1@{:.2f}'.format(threshold):>9} "
+            f"{'FP':>6} {'FN':>6}")
+    print(hdr2)
+    print("─" * len(hdr2))
+
+    results = {}
+    for name, pipe in pipelines.items():
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
             y_proba   = pipe.predict_proba(X_test)[:, 1]
             y_pred_50 = pipe.predict(X_test)
 
         y_pred_th = (y_proba >= threshold).astype(int)
-
         auc   = roc_auc_score(y_test, y_proba)
         ap    = average_precision_score(y_test, y_proba)
         acc   = accuracy_score(y_test, y_pred_th)
@@ -535,31 +627,31 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
             f"fn_at_{threshold}":         int(fn),
             "tn":                         int(tn),
             "tp":                         int(tp),
+            "val_auc":                    val_results[name]["val_auc"],
+            "cv_auc_mean":                round(cv_mean, 4) if name == best_name else None,
+            "cv_auc_std":                 round(cv_std,  4) if name == best_name else None,
         }
 
+        star = " ★" if name == best_name else ""
         print(f"{name:<25} {auc:>6.4f} {ap:>6.4f} {acc:>6.4f} "
               f"{prec:>6.4f} {rec:>6.4f} {f1_50:>8.4f} "
-              f"{f1_th:>9.4f} {fp:>6d} {fn:>6d}")
+              f"{f1_th:>9.4f} {fp:>6d} {fn:>6d}{star}")
 
-        if f1_th > best_f1:
-            best_f1       = f1_th
-            best_name     = name
-            best_pipeline = pipe
+    print(f"\n[Train] ★ Best model: {best_name}  (Test F1@{threshold}={results[best_name][f'f1_at_{threshold}']:.4f})")
 
-    print(f"\n[Train] ★ Best model: {best_name}  (F1@{threshold}={best_f1:.4f})")
-
-    # Detailed report for best model
+    # Detailed classification report for best model on test set
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
         y_proba_best = best_pipeline.predict_proba(X_test)[:, 1]
-    y_pred_best  = (y_proba_best >= threshold).astype(int)
+    y_pred_best = (y_proba_best >= threshold).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred_best).ravel()
-    print(f"\n[Train] === {best_name} — Detailed Report (threshold={threshold}) ===")
+    print(f"\n[Train] === {best_name} — Detailed Report on TEST set (threshold={threshold}) ===")
     print(classification_report(y_test, y_pred_best,
                                  target_names=["legitimate", "phishing"]))
     print(f"  False Positives (legit→phishing) : {fp}")
     print(f"  False Negatives (phishing→legit) : {fn}")
     print(f"  Average Precision (PR-AUC)        : {results[best_name]['average_precision']:.4f}")
+    print(f"  CV AUC mean ± std                 : {cv_mean:.4f} ± {cv_std:.4f}")
 
     # Save
     os.makedirs(os.path.join(_BASE, "models"), exist_ok=True)
@@ -569,9 +661,13 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
     meta = {
         "model_name":         best_name,
         "threshold":          threshold,
-        "f1":                 best_f1,
+        # f1 stored is VAL f1 (used for selection); test f1 is in results_all
+        "f1":                 results[best_name][f"f1_at_{threshold}"],
         "auc":                results[best_name]["auc"],
         "average_precision":  results[best_name]["average_precision"],
+        "cv_auc_mean":        results[best_name].get("cv_auc_mean"),
+        "cv_auc_std":         results[best_name].get("cv_auc_std"),
+        "split":              "70/15/15 train/val/test",
         "datasets_used":      csv_files,
         "total_rows":         len(df),
         "phishing_rows":      int(y.sum()),

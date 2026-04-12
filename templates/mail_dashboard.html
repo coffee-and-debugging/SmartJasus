@@ -1049,12 +1049,18 @@ async function addLocalUser() {
 
 // ── Action (send local email) ───────────────────────────────────────────────
 
+let _sending = false;
+
 async function sendEmailNow() {
+    // Guard: prevent duplicate sends from double-clicks or rapid re-clicks
+    if (_sending) return;
+
     const from = document.getElementById('fromAddress').value.trim();
     const to   = document.getElementById('toAddress').value.trim();
     const subj = document.getElementById('mailSubject').value.trim();
     const body = document.getElementById('mailBody').value;
     const stat = document.getElementById('sendStatus');
+    const btn  = document.getElementById('actionBtn');
 
     const fileInput = document.getElementById('mailAttachment');
     const attachedFile = (fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
@@ -1066,6 +1072,8 @@ async function sendEmailNow() {
         return;
     }
 
+    _sending = true;
+    btn.disabled = true;
     stat.innerHTML = '<span style="color:#93C5FD"><i class="fas fa-spinner fa-spin"></i> Sending...</span>';
 
     try {
@@ -1095,6 +1103,9 @@ async function sendEmailNow() {
         setTimeout(() => refreshInbox(true), 1200);
     } catch(e) {
         stat.innerHTML = `<span style="color:#F08080"><i class="fas fa-exclamation-triangle"></i> ${escHtml(e.message)}</span>`;
+    } finally {
+        _sending = false;
+        btn.disabled = false;
     }
 }
 
