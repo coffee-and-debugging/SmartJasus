@@ -247,7 +247,11 @@ def extract_features_from_email(
     else:
         urgent_keywords = int(urgent_keywords)
 
-    legitimate_domain = 1 if sender_domain in LEGITIMATE_DOMAINS else 0
+    # Match exact domain OR any subdomain (e.g. accounts.google.com → google.com)
+    legitimate_domain = 1 if (
+        sender_domain in LEGITIMATE_DOMAINS or
+        any(sender_domain.endswith("." + d) for d in LEGITIMATE_DOMAINS)
+    ) else 0
     suspicious_tld = 1 if any(sender_domain.endswith(t) for t in SUSPICIOUS_TLDS) else 0
     domain_has_digits = int(any(c.isdigit() for c in sender_domain))
     domain_has_hyphen = int("-" in sender_domain)
