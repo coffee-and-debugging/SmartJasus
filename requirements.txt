@@ -2,7 +2,7 @@ flask
 flask-cors
 pandas
 numpy
-scikit-learn==1.6.1
+scikit-learn>=1.6.1
 joblib
 scipy
 tldextract
@@ -11,3 +11,4 @@ python-dotenv
 psycopg2-binary
 requests
 xgboost
+lightgbm

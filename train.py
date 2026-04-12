@@ -34,6 +34,8 @@ import os
 import re
 import warnings
 
+import tldextract as _tldextract
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -293,9 +295,19 @@ def extract_additional_features(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: int(any(c.isdigit() for c in str(x))))
     df["domain_has_hyphen"] = df["sender_domain"].apply(
         lambda x: int("-" in str(x)))
-    df["domain_age"] = df["sender_domain"].apply(
-        lambda x: 30 if str(x).lower().strip() in LEGITIMATE_DOMAINS
-        else max(1, abs(hash(str(x))) % 8 + 1))
+    # domain_age: length of the registered domain label (e.g. len("paypal") = 6).
+    # Trusted domains get a fixed high value (30) to signal known-good senders.
+    # For unknown domains the registered-domain label length is a real structural
+    # signal: long random strings (e.g. "x7k2q9v3.com") are more common in phishing.
+    def _domain_age_score(domain: str) -> int:
+        d = str(domain).lower().strip()
+        if d in LEGITIMATE_DOMAINS:
+            return 30
+        ext = _tldextract.extract(d)
+        reg = ext.domain  # registered domain label, e.g. "paypal" from "paypal.com"
+        return max(1, len(reg)) if reg else 1
+
+    df["domain_age"] = df["sender_domain"].apply(_domain_age_score)
 
     def count_ip_urls(text: str) -> int:
         return len(re.findall(
@@ -412,6 +424,20 @@ def get_model_catalogue() -> dict:
         )
     except ImportError:
         pass
+    try:
+        from lightgbm import LGBMClassifier
+        catalogue["LightGBM"] = LGBMClassifier(
+            n_estimators=500, learning_rate=0.05,
+            max_depth=7, num_leaves=63,
+            subsample=0.8, colsample_bytree=0.8,
+            min_child_samples=10,
+            reg_alpha=0.1, reg_lambda=1.0,
+            class_weight="balanced",
+            random_state=42, n_jobs=-1,
+            verbose=-1,
+        )
+    except ImportError:
+        pass
     return catalogue
 
 
@@ -444,10 +470,11 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
         X, y, test_size=0.20, random_state=42, stratify=y
     )
 
-    # Inverse-frequency sample weights for boosting models
-    # Upweight the minority class by a factor of 1.4
-    w_phish = 1.0
-    w_legit = (n_phish / n_legit) * 1.4
+    # Sample weights for boosting models — upweight phishing by 1.4×
+    # Missed phishing (FN) is more costly than a false alarm (FP), so
+    # phishing examples get higher weight regardless of class ratio.
+    w_legit = 1.0
+    w_phish = (n_legit / max(n_phish, 1)) * 1.4
     sw_train = np.where(y_train == 1, w_phish, w_legit)
 
     print(f"[Train] Train: {len(X_train):,}  |  Test: {len(X_test):,}")
@@ -473,7 +500,7 @@ def train_and_save_model(threshold: float = 0.60) -> dict:
         ])
 
         fit_params = {}
-        if name in ("Gradient Boosting", "XGBoost"):
+        if name in ("Gradient Boosting", "XGBoost", "LightGBM"):
             fit_params["classifier__sample_weight"] = sw_train
 
         with warnings.catch_warnings():

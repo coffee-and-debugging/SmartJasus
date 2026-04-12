@@ -135,26 +135,12 @@ def load_model() -> None:
     global _model_pipeline, _model_meta
     model_path = os.path.join(_BASE, "models", "phishing_detection.pkl")
 
-    needs_retrain = False
     if not os.path.exists(model_path):
-        needs_retrain = True
-    else:
-        # Check if the saved model's threshold matches the current one
-        try:
-            existing = joblib.load(model_path)
-            saved_threshold = None
-            if isinstance(existing, dict) and "meta" in existing:
-                saved_threshold = existing["meta"].get("threshold")
-            if saved_threshold is None or abs(float(saved_threshold) - PHISHING_THRESHOLD) > 1e-9:
-                print(f"[CatchFish] Threshold changed "
-                      f"(saved={saved_threshold}, env={PHISHING_THRESHOLD}) — retraining …")
-                needs_retrain = True
-        except Exception:
-            needs_retrain = True
-
-    if needs_retrain:
-        from train import train_and_save_model
-        train_and_save_model(threshold=PHISHING_THRESHOLD)
+        raise FileNotFoundError(
+            f"[CatchFish] No trained model found at {model_path}. "
+            "Run train.py (or the Colab notebook) to generate it, "
+            "then place the resulting phishing_detection.pkl in models/."
+        )
 
     payload = joblib.load(model_path)
 
