@@ -6,6 +6,11 @@ checkButton.addEventListener("click", () => {
     checkLatestInboxEmails();
 });
 
+// Load results immediately when popup opens
+document.addEventListener("DOMContentLoaded", () => {
+    checkLatestInboxEmails();
+});
+
 function getBackendBaseUrl() {
     return new Promise((resolve) => {
         chrome.storage.local.get(["backendBaseUrl"], (data) => {
@@ -109,14 +114,10 @@ async function checkLatestInboxEmails() {
         const activityData = await activityResponse.json();
         const items = Array.isArray(activityData.items) ? activityData.items : [];
 
-        const inboxItems = items.filter((item) => {
-            if (item.source_mailbox && String(item.source_mailbox).toUpperCase() === "INBOX") {
-                return true;
-            }
-            return item.source_uid && String(item.source_uid).startsWith("imap:");
-        });
-
-        const latestFive = inboxItems.slice(0, 5);
+        // Show the latest 5 scanned emails regardless of source.
+        // Emails scanned via local server or /predict have null source_uid
+        // and source_mailbox, so filtering by those fields hides everything.
+        const latestFive = items.slice(0, 5);
         renderResults(latestFive);
     } catch (error) {
         setStatus(`Error connecting to backend: ${error.message}`);
