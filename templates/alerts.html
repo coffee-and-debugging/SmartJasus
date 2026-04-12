@@ -80,6 +80,20 @@
         .filter-count { font-size: 0.62rem; font-family: var(--mono); background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 3px; }
         .filter-unread { font-size: 0.58rem; font-family: var(--mono); background: var(--red); color: #fff; padding: 1px 5px; border-radius: 8px; line-height: 1.4; }
 
+        /* ── Mark all as read button ── */
+        .mark-read-btn {
+            margin-left: auto; display: none; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;
+            cursor: pointer; border: 1px solid rgba(13,158,116,0.35);
+            background: rgba(13,158,116,0.08); color: #0D9E74;
+            transition: background 0.12s, border-color 0.12s, color 0.12s;
+            white-space: nowrap; user-select: none; flex-shrink: 0;
+        }
+        .mark-read-btn:hover { background: rgba(13,158,116,0.18); border-color: rgba(13,158,116,0.6); color: #10C98E; }
+        .mark-read-btn.visible { display: flex; }
+        body.light-mode .mark-read-btn { background: rgba(4,120,87,0.07); border-color: rgba(4,120,87,0.3); color: #047857; }
+        body.light-mode .mark-read-btn:hover { background: rgba(4,120,87,0.14); border-color: rgba(4,120,87,0.55); color: #065F46; }
+
         /* ── Stats ── */
         .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
         .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; }
@@ -340,6 +354,9 @@
                         <span class="filter-count" id="pillCountAll">0</span>
                     </div>
                     <!-- per-user pills injected by JS -->
+                    <button class="mark-read-btn" id="markAllReadBtn" type="button">
+                        <i class="fas fa-check-double"></i> Mark all as read
+                    </button>
                 </div>
 
                 <div class="alert-list" id="alertList">
@@ -385,6 +402,31 @@
     });
     // Wire static All pill (present in HTML from page load)
     document.querySelector('[data-user="all"]').addEventListener('click', () => setFilter('all'));
+
+    // ── Mark all as read ──────────────────────────────────────────────────────
+    document.getElementById('markAllReadBtn').addEventListener('click', () => {
+        const viewAlerts = activeUser === 'all'
+            ? ALL_ALERTS
+            : ALL_ALERTS.filter(a => (a.recipient || '').toLowerCase() === activeUser);
+        const s = getReadSet();
+        viewAlerts.forEach(a => s.add(String(a.id)));
+        localStorage.setItem('sjAlertsRead', JSON.stringify([...s]));
+        // Remove unread dots from all visible items
+        document.querySelectorAll('.alert-item.unread').forEach(el => el.classList.remove('unread'));
+        // Rebuild pills + hide the button
+        buildFilterPills(ALL_ALERTS);
+        // Recount stats
+        const unread = viewAlerts.filter(a => !s.has(String(a.id))).length;
+        document.getElementById('statUnread').textContent = unread.toLocaleString();
+        const globalUnread = ALL_ALERTS.filter(a => !s.has(String(a.id))).length;
+        const badge = document.getElementById('navBadge');
+        if (globalUnread > 0) {
+            badge.textContent = globalUnread > 99 ? '99+' : globalUnread;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+    });
 
     // ── Read tracking (stored by email id) ───────────────────────────────────
     function getReadSet() {
@@ -454,6 +496,12 @@
         } else if (allUnreadBadge) {
             allUnreadBadge.remove();
         }
+
+        // Show/hide "Mark all as read" button based on whether any unread exist in current view
+        const viewAlerts = activeUser === 'all' ? allAlerts : allAlerts.filter(a => (a.recipient||'').toLowerCase() === activeUser);
+        const viewUnread = viewAlerts.filter(a => !readSet.has(String(a.id))).length;
+        const markBtn = document.getElementById('markAllReadBtn');
+        markBtn.classList.toggle('visible', viewUnread > 0);
 
         // Remove old per-user pills
         bar.querySelectorAll('.user-pill').forEach(p => p.remove());

@@ -105,6 +105,45 @@ def _count_csv_rows(path: str) -> int:
     except Exception:
         return 0
 
+
+_LABEL_MAP = {
+    "1": 1, "phishing": 1, "spam": 1, "malicious": 1,
+    "0": 0, "legitimate": 0, "ham": 0, "safe": 0, "benign": 0,
+}
+
+
+def _count_csv_label_split(path: str) -> dict:
+    """Return {'rows': N, 'phish': N, 'legit': N} by reading only the label column."""
+    try:
+        import csv
+        csv.field_size_limit(10 ** 7)  # some email bodies exceed the 128 KB default
+        phish = legit = 0
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.reader(f)
+            raw_header = next(reader, None)
+            if raw_header is None:
+                return {"rows": 0, "phish": 0, "legit": 0}
+            # normalise header names exactly as train.py does
+            header = [c.strip().strip('"').strip("'").lower() for c in raw_header]
+            if "label" not in header:
+                # no label column — count lines only
+                rows = sum(1 for _ in reader)
+                return {"rows": rows, "phish": 0, "legit": rows}
+            label_idx = header.index("label")
+            for row in reader:
+                if len(row) <= label_idx:
+                    continue
+                raw = row[label_idx].strip().strip('"').strip("'").lower()
+                lbl = _LABEL_MAP.get(raw)
+                if lbl == 1:
+                    phish += 1
+                elif lbl == 0:
+                    legit += 1
+        return {"rows": phish + legit, "phish": phish, "legit": legit}
+    except Exception:
+        rows = _count_csv_rows(path)
+        return {"rows": rows, "phish": 0, "legit": rows}
+
 # Ensure local domain is always trusted
 LEGITIMATE_DOMAINS.add(LOCAL_DOMAIN)
 
@@ -721,15 +760,31 @@ def get_stats():
 
 @app.route("/api/model-info", methods=["GET"])
 def model_info():
-    """Return trained model metadata."""
+    """Return trained model metadata.
+
+    When model metadata is absent (e.g. pkl missing or from an incompatible
+    sklearn version), fall back to counting rows directly from the CSV files
+    so the Dataset page always shows real numbers.
+    """
     datasets_used = _model_meta.get("datasets_used") or _discover_realworld_dataset_csvs()
 
-    total_rows = _model_meta.get("total_rows", 0)
-    if (not total_rows) and datasets_used:
-        total_rows = sum(
-            _count_csv_rows(os.path.join(_DATASET, fname))
-            for fname in datasets_used
-        )
+    # Use stored per_dataset counts when available; otherwise compute from CSVs.
+    per_dataset = _model_meta.get("per_dataset") or {}
+    if not per_dataset and datasets_used:
+        for fname in datasets_used:
+            per_dataset[fname] = _count_csv_label_split(
+                os.path.join(_DATASET, fname)
+            )
+
+    # Derive totals from per_dataset so they are always consistent.
+    if per_dataset:
+        total_rows  = sum(v.get("rows",  0) for v in per_dataset.values())
+        phish_rows  = sum(v.get("phish", 0) for v in per_dataset.values())
+        legit_rows  = sum(v.get("legit", 0) for v in per_dataset.values())
+    else:
+        total_rows = _model_meta.get("total_rows", 0)
+        phish_rows = _model_meta.get("phishing_rows", 0)
+        legit_rows = _model_meta.get("legitimate_rows", 0)
 
     return jsonify({
         "model_name":      _model_meta.get("model_name", "unknown"),
@@ -739,9 +794,9 @@ def model_info():
         "results_all":     _model_meta.get("results_all", {}),
         "datasets_used":   datasets_used,
         "total_rows":      total_rows,
-        "phishing_rows":   _model_meta.get("phishing_rows"),
-        "legitimate_rows": _model_meta.get("legitimate_rows"),
-        "per_dataset":     _model_meta.get("per_dataset", {}),
+        "phishing_rows":   phish_rows,
+        "legitimate_rows": legit_rows,
+        "per_dataset":     per_dataset,
     })
 
 
