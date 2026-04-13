@@ -10,5 +10,3 @@ aiosmtpd
 python-dotenv
 psycopg2-binary
 requests
-xgboost
-lightgbm

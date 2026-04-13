@@ -78,7 +78,7 @@
         .ds-bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.7s cubic-bezier(0.34, 1.1, 0.64, 1); }
         .ds-bar-fill.phish { background: linear-gradient(90deg, #C93030, #F08080); }
         .ds-bar-fill.legit { background: linear-gradient(90deg, #0D9E74, #5AE8B4); }
-        .ds-badge { padding: 2px 7px; border-radius: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .ds-badge { display: inline-flex; align-items: center; justify-content: center; width: 11ch; padding: 2px 7px; border-radius: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
         .ds-badge.mixed    { background: rgba(46,125,211,0.14); color: #60A5FA; border: 1px solid rgba(46,125,211,0.28); }
         .ds-badge.phishing { background: rgba(201,48,48,0.14); color: #F08080; border: 1px solid rgba(201,48,48,0.28); }
         .ds-badge.legit-b  { background: rgba(13,158,116,0.12); color: #5AE8B4; border: 1px solid rgba(13,158,116,0.24); }
@@ -100,7 +100,6 @@
 
         /* Split bars section */
         .split-bar-list { display: flex; flex-direction: column; gap: 10px; }
-        .split-bar-item {}
         .split-bar-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.72rem; }
         .split-bar-name { color: var(--text); font-weight: 600; font-family: var(--mono); font-size: 0.68rem; }
         .split-bar-pct  { color: var(--muted); font-size: 0.62rem; font-family: var(--mono); }
@@ -125,6 +124,22 @@
         .pipe-block-body { font-size: 0.72rem; color: var(--muted2); line-height: 1.5; }
         .pipe-block-body strong { color: var(--text); }
         .pipe-block-code { font-family: var(--mono); color: var(--accent); }
+
+        /* ── Pipeline (copied from index) ─────────────────────────────────── */
+        .pipe-row {
+            display: flex; align-items: center; gap: 0;
+            flex-wrap: nowrap; padding: 6px 0; justify-content: center;
+            overflow-x: auto;
+        }
+        .pipe-step {
+            text-align: center; padding: 9px 12px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 5px; flex-shrink: 0;
+        }
+        .pipe-step-icon  { font-size: 1rem; margin-bottom: 4px; }
+        .pipe-step-label { font-size: 0.6rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.3px; }
+        .pipe-step-sub   { font-size: 0.53rem; color: var(--muted); margin-top: 2px; }
+        .pipe-arrow { flex-shrink: 0; padding: 0 4px; color: #253050; font-size: 0.8rem; }
 
         /* Light mode */
         body.light-mode { background: #EEF2F8; color: #1A2535; }
@@ -169,6 +184,9 @@
         body.light-mode .pipe-block-body { color: #334155; }
         body.light-mode .pipe-block-body strong { color: #0F172A; }
         body.light-mode .pipe-block-code { color: #1D4ED8; }
+        body.light-mode .pipe-step { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .pipe-step-label { color: #1E293B; }
+        body.light-mode .pipe-step-sub   { color: #546880; }
         footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
         body.light-mode footer { border-top-color: #CCDAE8; color: #4A607A; }
 
@@ -198,13 +216,13 @@
         <div class="nav-menu">
             <a href="/dataset" class="nav-item active"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/post-ml" class="nav-item"><i class="fas fa-code-branch"></i><span>Post ML</span></a>
             <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
         </div>
         <div class="nav-section">Security Intelligence</div>
         <div class="nav-menu">
             <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
             <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
-            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
         </div>
         <div class="nav-section">Console</div>
         <div class="nav-menu">
@@ -321,57 +339,57 @@
             </div>
         </div>
 
-        <!-- Bottom grid: Schema Info | Preprocessing -->
-        <div class="bottom-grid">
-
-            <div class="cis-card">
-                <div class="card-header"><i class="fas fa-file-code"></i> Supported Dataset Schemas</div>
-                <div class="card-body">
-                    <div class="schema-grid">
-                        <div class="schema-item">
-                            <div class="schema-name">Schema A — Original Format</div>
-                            <div class="schema-desc">Used by Enron, Ling, Nazario, SpamAssassin, Nigerian Fraud and similar raw dumps. Body text is in a <code class="pipe-block-code" style="font-family:var(--mono)">body</code> column; sender extracted from a <code class="pipe-block-code" style="font-family:var(--mono)">sender</code> field.</div>
-                            <div class="schema-cols">columns: sender · body · subject · label</div>
-                        </div>
-                        <div class="schema-item">
-                            <div class="schema-name">Schema B — Pre-Processed Format</div>
-                            <div class="schema-desc">Pre-engineered datasets that already contain computed columns. Accepted directly — no re-extraction needed. The loader auto-detects which schema applies per file.</div>
-                            <div class="schema-cols">columns: email_text · sender_domain · has_attachment · links_count · urgent_keywords · label</div>
-                        </div>
-                        <div class="schema-item">
-                            <div class="schema-name">Label Normalisation</div>
-                            <div class="schema-desc">Both numeric and text labels are accepted. Mapping handles case-insensitive variants automatically.</div>
-                            <div class="schema-cols">1 / phishing / spam / malicious → phishing<br>0 / legitimate / ham / safe / benign → legitimate</div>
-                        </div>
-                        <div class="schema-item">
-                            <div class="schema-name">Deduplication</div>
-                            <div class="schema-desc">After merging all CSVs, exact duplicates are removed on (email_text, subject) before training to avoid data leakage and inflated metrics.</div>
-                            <div class="schema-cols">80 / 20 stratified train-test split · random_state=42</div>
-                        </div>
+        <!-- Detection Pipeline -->
+        <div class="cis-card" style="margin-bottom:12px">
+            <div class="card-header"><i class="fas fa-diagram-project"></i> Detection Pipeline</div>
+            <div class="card-body">
+                <div class="pipe-row">
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#60A5FA"><i class="fas fa-envelope-open"></i></div>
+                        <div class="pipe-step-label">Email In</div>
+                        <div class="pipe-step-sub">SMTP · IMAP · Manual</div>
                     </div>
-                </div>
-            </div>
-
-            <div class="cis-card">
-                <div class="card-header"><i class="fas fa-gears"></i> Preprocessing Pipeline</div>
-                <div class="card-body">
-                    <div style="display:flex;flex-direction:column;gap:8px">
-                        <div class="pipe-block">
-                            <div class="pipe-block-title" style="color:#60A5FA"><i class="fas fa-font" style="margin-right:5px"></i>Text Vectorisation — HashingVectorizer</div>
-                            <div class="pipe-block-body">Applied to <strong>email_text</strong> and <strong>subject</strong>. Uses 2¹⁶ = 65 536 hash buckets, unigrams + bigrams, English stop-word removal. No vocabulary storage — stateless and memory-efficient.</div>
-                        </div>
-                        <div class="pipe-block">
-                            <div class="pipe-block-title" style="color:#A78BFA"><i class="fas fa-at" style="margin-right:5px"></i>Domain Vectorisation — HashingVectorizer</div>
-                            <div class="pipe-block-body">Applied to <strong>sender_domain</strong> with 512 buckets — small enough to not dominate but sufficient to encode domain patterns (TLD, depth, hyphenation).</div>
-                        </div>
-                        <div class="pipe-block">
-                            <div class="pipe-block-title" style="color:#34D399"><i class="fas fa-sliders" style="margin-right:5px"></i>Numeric Scaling — StandardScaler</div>
-                            <div class="pipe-block-body">All 19 engineered numeric features are zero-mean unit-variance scaled. This prevents large-magnitude features (e.g. email_length) from dominating gradient updates in linear and boosting models.</div>
-                        </div>
-                        <div class="pipe-block">
-                            <div class="pipe-block-title" style="color:#FBBF24"><i class="fas fa-weight-hanging" style="margin-right:5px"></i>Class Imbalance Handling</div>
-                            <div class="pipe-block-body">Sample weights applied for Gradient Boosting and XGBoost. Tree-based models use <code class="pipe-block-code">class_weight="balanced"</code>. Logistic Regression likewise. Prevents models from defaulting to the majority class.</div>
-                        </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#A78BFA"><i class="fas fa-broom"></i></div>
+                        <div class="pipe-step-label">Preprocess</div>
+                        <div class="pipe-step-sub">HTML strip</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#34D399"><i class="fas fa-microscope"></i></div>
+                        <div class="pipe-step-label">Feature Extract</div>
+                        <div class="pipe-step-sub">URLs · Domain</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#FBBF24"><i class="fas fa-brain"></i></div>
+                        <div class="pipe-step-label">ML Model</div>
+                        <div class="pipe-step-sub" id="pipeModelName">Best Classifier</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#F87171"><i class="fas fa-code-branch"></i></div>
+                        <div class="pipe-step-label">Rule Engine</div>
+                        <div class="pipe-step-sub">Domain · IP · TLD</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#E879F9"><i class="fas fa-scale-balanced"></i></div>
+                        <div class="pipe-step-label">Threshold</div>
+                        <div class="pipe-step-sub">0.60 Anti-FP</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#38BDF8"><i class="fas fa-database"></i></div>
+                        <div class="pipe-step-label">Log &amp; Store</div>
+                        <div class="pipe-step-sub">PostgreSQL</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#10B981"><i class="fas fa-bell"></i></div>
+                        <div class="pipe-step-label">Alert Feed</div>
+                        <div class="pipe-step-sub">Real-time</div>
                     </div>
                 </div>
             </div>
@@ -451,11 +469,11 @@
             tbody.innerHTML = dsRows.map(r => {
                 const phishPct = r.phish !== null && r.rows ? ((r.phish / r.rows) * 100).toFixed(1) : '—';
                 const legitPct = r.legit !== null && r.rows ? ((r.legit / r.rows) * 100).toFixed(1) : '—';
-                const hasPhish = r.phish !== null;
-                const hasLegit = r.legit !== null;
-                const type = !hasLegit ? 'phishing' : (!hasPhish ? 'legit-b' : 'mixed');
+                const phishCount = Number(r.phish || 0);
+                const legitCount = Number(r.legit || 0);
+                const type = phishCount > 0 && legitCount > 0 ? 'mixed' : (phishCount > 0 ? 'phishing' : 'legit-b');
                 const typeLabel = type === 'phishing' ? 'Phishing' : type === 'legit-b' ? 'Legitimate' : 'Mixed';
-                const phishW = hasPhish ? Math.round((r.phish / r.rows) * 100) : 50;
+                const phishW = r.rows ? Math.round((phishCount / r.rows) * 100) : 0;
                 return `<tr>
                     <td><span class="ds-name">${r.name}</span></td>
                     <td style="font-family:var(--mono);font-size:0.75rem">${r.rows.toLocaleString()}</td>

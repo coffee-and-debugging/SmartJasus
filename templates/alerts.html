@@ -109,6 +109,22 @@
         .card-header i { color: var(--red); font-size: 0.7rem; }
         .card-body { padding: 14px; }
 
+        /* ── Pipeline (copied from index) ─────────────────────────────────── */
+        .pipe-row {
+            display: flex; align-items: center; gap: 0;
+            flex-wrap: nowrap; padding: 6px 0; justify-content: center;
+            overflow-x: auto;
+        }
+        .pipe-step {
+            text-align: center; padding: 9px 12px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 5px; flex-shrink: 0;
+        }
+        .pipe-step-icon  { font-size: 1rem; margin-bottom: 4px; }
+        .pipe-step-label { font-size: 0.6rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.3px; }
+        .pipe-step-sub   { font-size: 0.53rem; color: var(--muted); margin-top: 2px; }
+        .pipe-arrow { flex-shrink: 0; padding: 0 4px; color: #253050; font-size: 0.8rem; }
+
         /* ── Alert list ── */
         .alert-list { display: flex; flex-direction: column; gap: 6px; max-height: 68vh; overflow-y: auto; padding-right: 4px; }
         .alert-item {
@@ -258,6 +274,9 @@
         body.light-mode .feat-cell-val { color: #1D4ED8; }
         body.light-mode .body-preview { background: #F4F7FC; border-color: #CCDAE8; color: #334155; }
         body.light-mode .prob-meter-track { background: #FECACA; }
+        body.light-mode .pipe-step { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .pipe-step-label { color: #1E293B; }
+        body.light-mode .pipe-step-sub   { color: #546880; }
         body.light-mode .prob-meter-labels { color: #64748B; }
         body.light-mode .filter-pill { background: #F4F7FC; border-color: #CCDAE8; color: #334155; }
         body.light-mode .filter-pill:hover { color: #0F172A; border-color: #2563EB; }
@@ -293,13 +312,13 @@
         <div class="nav-menu">
             <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/post-ml" class="nav-item"><i class="fas fa-code-branch"></i><span>Post ML</span></a>
             <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
         </div>
         <div class="nav-section">Security Intelligence</div>
         <div class="nav-menu">
             <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
             <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
-            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
         </div>
         <div class="nav-section">Console</div>
         <div class="nav-menu">
@@ -363,6 +382,62 @@
                     <div class="empty-state" id="loadingState">
                         <i class="fas fa-circle-notch fa-spin"></i>
                         <div class="empty-state-title">Loading alerts…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection Pipeline -->
+        <div class="cis-card" style="margin-bottom:12px">
+            <div class="card-header"><i class="fas fa-diagram-project"></i> Detection Pipeline</div>
+            <div class="card-body">
+                <div class="pipe-row">
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#60A5FA"><i class="fas fa-envelope-open"></i></div>
+                        <div class="pipe-step-label">Email In</div>
+                        <div class="pipe-step-sub">SMTP · IMAP · Manual</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#A78BFA"><i class="fas fa-broom"></i></div>
+                        <div class="pipe-step-label">Preprocess</div>
+                        <div class="pipe-step-sub">HTML strip</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#34D399"><i class="fas fa-microscope"></i></div>
+                        <div class="pipe-step-label">Feature Extract</div>
+                        <div class="pipe-step-sub">URLs · Domain</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#FBBF24"><i class="fas fa-brain"></i></div>
+                        <div class="pipe-step-label">ML Model</div>
+                        <div class="pipe-step-sub" id="pipeModelName">Best Classifier</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#F87171"><i class="fas fa-code-branch"></i></div>
+                        <div class="pipe-step-label">Rule Engine</div>
+                        <div class="pipe-step-sub">Domain · IP · TLD</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#E879F9"><i class="fas fa-scale-balanced"></i></div>
+                        <div class="pipe-step-label">Threshold</div>
+                        <div class="pipe-step-sub">0.60 Anti-FP</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#38BDF8"><i class="fas fa-database"></i></div>
+                        <div class="pipe-step-label">Log &amp; Store</div>
+                        <div class="pipe-step-sub">PostgreSQL</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#10B981"><i class="fas fa-bell"></i></div>
+                        <div class="pipe-step-label">Alert Feed</div>
+                        <div class="pipe-step-sub">Real-time</div>
                     </div>
                 </div>
             </div>

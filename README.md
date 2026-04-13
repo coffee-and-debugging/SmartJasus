@@ -38,8 +38,8 @@ Core outcomes:
    - read and merge all 6 dataset CSVs from dataset/
    - clean and derive required features
    - engineer additional features
-   - train scikit-learn pipeline across 5 models
-   - persist best model artifact at models/phishing_detection.pkl
+   - train a scikit-learn Logistic Regression pipeline
+   - persist the model artifact at models/phishing_detection.pkl
 
 3. Local SMTP + persistence layer
    File: local_mail_server.py
@@ -93,7 +93,7 @@ When python app.py starts:
 2. MailStore initializes PostgreSQL (create DB/table/indexes if needed).
 3. Model loading runs:
    - if models/phishing_detection.pkl exists, load it
-   - if missing, trigger train_and_save_model() from train.py, then load
+   - if missing, trigger training from train.py, then load
 4. Local SMTP service starts at LOCAL_SMTP_HOST:LOCAL_SMTP_PORT.
 5. Flask server starts at APP_HOST:APP_PORT.
 6. Optional IMAP auto-sync runs if AUTO_SYNC_ON_START=true.
@@ -204,26 +204,21 @@ Numeric channel:
 
 4. 19 numeric features -> StandardScaler
 
-### 4.5 Model catalogue
+### 4.5 Model configuration
 
-All 5 models are trained and compared:
+CatchFish uses a single classifier:
 
-1. Logistic Regression   — max_iter=1000, C=1.0, class_weight=balanced
-2. Random Forest         — 150 trees, max_depth=12, class_weight=balanced
-3. Extra Trees           — 150 trees, max_depth=12, class_weight=balanced
-4. Gradient Boosting     — 200 estimators, lr=0.08, max_depth=5
-5. XGBoost               — 200 estimators, lr=0.08, max_depth=5 (if installed)
+1. Logistic Regression — max_iter=1000, C=1.0, class_weight=balanced, solver=lbfgs
 
-Best model by F1@0.60 is saved automatically.
+The trained pipeline is saved to models/phishing_detection.pkl.
 
 ### 4.6 Train/validation flow
 
-1. Split: train_test_split with test_size=0.20, random_state=42, stratify=y
-2. Sample weights: w_legit = (n_phish / n_legit) * 1.4 to balance classes
-3. Fit pipeline on train split.
-4. Evaluate on test split at threshold=0.60:
+1. Split: stratified 70 / 15 / 15 train/validation/test
+2. Fit Logistic Regression pipeline on the train split.
+3. Evaluate with threshold=0.60:
    - AUC, Accuracy, Precision, Recall, F1, FP, FN
-5. Save best model with joblib.dump(..., compress=3).
+4. Save the trained pipeline with joblib.dump(..., compress=3).
 
 ### 4.7 Inference internals in app.py
 
@@ -231,7 +226,7 @@ Primary function: predict_from_payload(data)
 
 Pipeline:
 
-1. extract_features_from_email(...) fills missing metadata and computes engineered fields.
+1. extract_email_features(...) fills missing metadata and computes engineered fields.
 2. Build single-row pandas DataFrame.
 3. Call model.predict_proba.
 4. Apply rule adjustments (trusted domain, IP URLs, suspicious TLD, shorteners).
@@ -259,8 +254,8 @@ python train.py
 
 This will:
 1. Load and merge all 6 CSVs from dataset/
-2. Train all models
-3. Save the best to models/phishing_detection.pkl
+2. Train the Logistic Regression pipeline
+3. Save it to models/phishing_detection.pkl
 
 To retrain on Google Colab (recommended for slow machines):
 - Upload dataset/ folder to Google Drive
@@ -462,11 +457,6 @@ APP_HOST=0.0.0.0
 APP_PORT=5000
 
 VIRUSTOTAL_API_KEY=your_virustotal_api_key
-
-# Have I Been Pwned (HIBP) for password breach checker
-HIBP_API_KEY=your_hibp_api_key
-HIBP_USER_AGENT=CatchFish/1.0 (contact: your_email@example.com)
-HIBP_PASSWORDS_API_URL=https://api.pwnedpasswords.com/range
 
 PHISHING_THRESHOLD=0.60
 AUTO_SYNC_ON_START=false

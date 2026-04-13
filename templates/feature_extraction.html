@@ -117,6 +117,22 @@
         .pipe-stage-desc  { font-size: 0.68rem; color: var(--muted2); line-height: 1.45; }
         .pipe-connector { text-align: center; color: #253050; font-size: 0.78rem; line-height: 1; }
 
+        /* ── Pipeline (copied from index) ─────────────────────────────────── */
+        .pipe-row {
+            display: flex; align-items: center; gap: 0;
+            flex-wrap: nowrap; padding: 6px 0; justify-content: center;
+            overflow-x: auto;
+        }
+        .pipe-step {
+            text-align: center; padding: 9px 12px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 5px; flex-shrink: 0;
+        }
+        .pipe-step-icon  { font-size: 1rem; margin-bottom: 4px; }
+        .pipe-step-label { font-size: 0.6rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.3px; }
+        .pipe-step-sub   { font-size: 0.53rem; color: var(--muted); margin-top: 2px; }
+        .pipe-arrow { flex-shrink: 0; padding: 0 4px; color: #253050; font-size: 0.8rem; }
+
         /* Rule adjustments */
         .rule-list { display: flex; flex-direction: column; gap: 6px; }
         .rule-item { display: flex; align-items: flex-start; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 12px; }
@@ -162,6 +178,9 @@
         body.light-mode .imp-val { color: #4A607A; }
         body.light-mode .pipe-stage-title { color: #0F172A; }
         body.light-mode .pipe-connector { color: #94A3B8; }
+        body.light-mode .pipe-step { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .pipe-step-label { color: #1E293B; }
+        body.light-mode .pipe-step-sub   { color: #546880; }
         body.light-mode .rule-text strong { color: #0F172A; }
         body.light-mode .rule-note { color: #334155; }
         body.light-mode .card-header { color: #1E293B; }
@@ -213,13 +232,13 @@
         <div class="nav-menu">
             <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item active"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/post-ml" class="nav-item"><i class="fas fa-code-branch"></i><span>Post ML</span></a>
             <a href="/model" class="nav-item"><i class="fas fa-brain"></i><span>Model</span></a>
         </div>
         <div class="nav-section">Security Intelligence</div>
         <div class="nav-menu">
             <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
             <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
-            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
         </div>
         <div class="nav-section">Console</div>
         <div class="nav-menu">
@@ -257,8 +276,8 @@
                 <div class="stat-number orange">6</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Rule Adjustments</div>
-                <div class="stat-number purple">5</div>
+                <div class="stat-label">Semantic Features</div>
+                <div class="stat-number purple">1</div>
             </div>
         </div>
 
@@ -348,31 +367,57 @@
             </div>
         </div>
 
-        <!-- Rule adjustments -->
+        <!-- Detection Pipeline -->
         <div class="cis-card" style="margin-bottom:12px">
-            <div class="card-header"><i class="fas fa-code-branch"></i> Hybrid Rule Engine Adjustments (Post-ML)</div>
+            <div class="card-header"><i class="fas fa-diagram-project"></i> Detection Pipeline</div>
             <div class="card-body">
-                <div style="font-size:0.68rem;color:var(--muted2);margin-bottom:12px;line-height:1.5">After the ML model outputs a raw probability, the rule engine applies additive adjustments to reduce false positives/negatives. Adjustments are logged per-email in the scan log.</div>
-                <div class="rule-list">
-                    <div class="rule-item">
-                        <div class="rule-delta neg">−0.18</div>
-                        <div class="rule-text"><strong>Trusted sender domain:</strong> If the sender domain is in the known-legitimate domains list, the phishing probability is reduced by 0.18 (clamped to ≥ 0.05). Prevents false positives from well-known senders.</div>
+                <div class="pipe-row">
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#60A5FA"><i class="fas fa-envelope-open"></i></div>
+                        <div class="pipe-step-label">Email In</div>
+                        <div class="pipe-step-sub">SMTP · IMAP · Manual</div>
                     </div>
-                    <div class="rule-item">
-                        <div class="rule-delta pos">+0.20</div>
-                        <div class="rule-text"><strong>IP-based URL detected:</strong> URLs containing a raw IPv4 address (e.g. <code style="font-family:var(--mono);color:var(--accent)">http://192.168.x.x</code>) strongly indicate phishing. Probability raised by 0.20.</div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#A78BFA"><i class="fas fa-broom"></i></div>
+                        <div class="pipe-step-label">Preprocess</div>
+                        <div class="pipe-step-sub">HTML strip</div>
                     </div>
-                    <div class="rule-item">
-                        <div class="rule-delta pos">+0.12</div>
-                        <div class="rule-text"><strong>Suspicious TLD:</strong> Sender domain ends in a TLD from the curated suspicious list. Probability raised by 0.12.</div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#34D399"><i class="fas fa-microscope"></i></div>
+                        <div class="pipe-step-label">Feature Extract</div>
+                        <div class="pipe-step-sub">URLs · Domain</div>
                     </div>
-                    <div class="rule-item">
-                        <div class="rule-delta pos">+0.10</div>
-                        <div class="rule-text"><strong>URL shortener detected:</strong> A URL in the body matches a known shortener domain (bit.ly, tinyurl, etc.). Shorteners are commonly used to hide phishing destinations. +0.10.</div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#FBBF24"><i class="fas fa-brain"></i></div>
+                        <div class="pipe-step-label">ML Model</div>
+                        <div class="pipe-step-sub" id="pipeModelName">Best Classifier</div>
                     </div>
-                    <div class="rule-item">
-                        <div class="rule-delta pos">+0.06</div>
-                        <div class="rule-text"><strong>Digits in sender domain:</strong> Non-legitimate domain contains numeric characters — a common typosquatting signal. +0.06 if not already in the trusted list.</div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#F87171"><i class="fas fa-code-branch"></i></div>
+                        <div class="pipe-step-label">Rule Engine</div>
+                        <div class="pipe-step-sub">Domain · IP · TLD</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#E879F9"><i class="fas fa-scale-balanced"></i></div>
+                        <div class="pipe-step-label">Threshold</div>
+                        <div class="pipe-step-sub">0.60 Anti-FP</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#38BDF8"><i class="fas fa-database"></i></div>
+                        <div class="pipe-step-label">Log &amp; Store</div>
+                        <div class="pipe-step-sub">PostgreSQL</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#10B981"><i class="fas fa-bell"></i></div>
+                        <div class="pipe-step-label">Alert Feed</div>
+                        <div class="pipe-step-sub">Real-time</div>
                     </div>
                 </div>
             </div>

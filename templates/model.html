@@ -90,7 +90,7 @@
         .metric-bar-wrap { width: 70px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 5px; }
         .metric-bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.7s cubic-bezier(0.34,1.1,0.64,1); }
 
-        /* Radar-style metric cards for best model */
+        /* Radar-style metric cards for production model */
         .metric-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
         .metric-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 11px 13px; text-align: center; }
         .metric-card-label { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
@@ -125,6 +125,22 @@
         .hbar-val  { font-family: var(--mono); font-size: 0.68rem; color: var(--muted2); }
         .hbar-track { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
         .hbar-fill  { height: 100%; border-radius: 4px; width: 0; transition: width 0.75s cubic-bezier(0.34,1.1,0.64,1); }
+
+        /* ── Pipeline (copied from index) ─────────────────────────────────── */
+        .pipe-row {
+            display: flex; align-items: center; gap: 0;
+            flex-wrap: nowrap; padding: 6px 0; justify-content: center;
+            overflow-x: auto;
+        }
+        .pipe-step {
+            text-align: center; padding: 9px 12px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 5px; flex-shrink: 0;
+        }
+        .pipe-step-icon  { font-size: 1rem; margin-bottom: 4px; }
+        .pipe-step-label { font-size: 0.6rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.3px; }
+        .pipe-step-sub   { font-size: 0.53rem; color: var(--muted); margin-top: 2px; }
+        .pipe-arrow { flex-shrink: 0; padding: 0 4px; color: #253050; font-size: 0.8rem; }
 
         /* Evaluated classifiers grid */
         .algo-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 10px; }
@@ -212,6 +228,9 @@
         body.light-mode .ring-orange { color: #B45309 !important; }
         body.light-mode .ring-purple { color: #6D28D9 !important; }
         body.light-mode .metric-ring-track { stroke: #CCDAE8; }
+        body.light-mode .pipe-step { background: #F4F7FC; border-color: #CCDAE8; }
+        body.light-mode .pipe-step-label { color: #1E293B; }
+        body.light-mode .pipe-step-sub   { color: #546880; }
         footer { margin-top: 24px; text-align: center; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; letter-spacing: 0.5px; }
         body.light-mode footer { border-top-color: #CCDAE8; color: #4A607A; }
 
@@ -244,13 +263,13 @@
         <div class="nav-menu">
             <a href="/dataset" class="nav-item"><i class="fas fa-database"></i><span>Dataset</span></a>
             <a href="/feature-extraction" class="nav-item"><i class="fas fa-microscope"></i><span>Feature Extraction</span></a>
+            <a href="/post-ml" class="nav-item"><i class="fas fa-code-branch"></i><span>Post ML</span></a>
             <a href="/model" class="nav-item active"><i class="fas fa-brain"></i><span>Model</span></a>
         </div>
         <div class="nav-section">Security Intelligence</div>
         <div class="nav-menu">
             <a href="/virustotal-file-scanner" class="nav-item"><i class="fas fa-virus-slash"></i><span>VirusTotal Scanner</span></a>
             <a href="/domain-intelligence" class="nav-item"><i class="fas fa-globe"></i><span>Domain Intelligence</span></a>
-            <a href="/password-breach-checker" class="nav-item"><i class="fas fa-key"></i><span>Password Breach</span></a>
         </div>
         <div class="nav-section">Console</div>
         <div class="nav-menu">
@@ -277,10 +296,10 @@
             </div>
         </div>
 
-        <!-- Stats (best model) -->
+        <!-- Stats (production model) -->
         <div class="stats-row">
             <div class="stat-card">
-                <div class="stat-label">Best Model</div>
+                <div class="stat-label">Model</div>
                 <div class="stat-number" id="statModelName" style="font-size:1rem;line-height:1.4">—</div>
             </div>
             <div class="stat-card">
@@ -298,7 +317,7 @@
             </div>
         </div>
 
-        <!-- Ring metrics for best model -->
+        <!-- Ring metrics for production model -->
         <div class="metric-cards" id="metricCards">
             <div class="metric-card">
                 <div class="metric-card-label">AUC-ROC</div>
@@ -318,132 +337,146 @@
             </div>
         </div>
 
-        <!-- Main grid: comparison table | confusion matrix -->
         <div class="main-grid">
-
-            <!-- Model comparison table -->
+            <!-- Confusion matrix -->
             <div class="cis-card">
-                <div class="card-header"><i class="fas fa-table-list"></i> All Models — Comparison at Threshold 0.60</div>
-                <div class="card-body" style="padding:0">
-                    <table class="model-table" id="modelTable">
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>AUC</th>
-                                <th>Precision</th>
-                                <th>Recall</th>
-                                <th>F1@0.60</th>
-                                <th>FP</th>
-                                <th>FN</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modelTableBody">
-                            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading model data…</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Confusion matrix + metric bars -->
-            <div class="cis-card">
-                <div class="card-header"><i class="fas fa-grid-2"></i> Confusion Matrix — Best Model</div>
+                <div class="card-header"><i class="fas fa-grid-2"></i> Confusion Matrix — Production Model</div>
                 <div class="card-body">
-                    <div class="note-muted" style="font-size:0.62rem;color:var(--muted);margin-bottom:10px">Predicted →</div>
-                    <div class="cm-wrapper">
-                        <div>
-                            <div style="display:flex;gap:6px;margin-bottom:4px">
-                                <div style="width:24px"></div>
-                                <div class="cm-axis" style="flex:1;text-align:center">Legitimate</div>
-                                <div class="cm-axis" style="flex:1;text-align:center">Phishing</div>
+                <div class="note-muted" style="font-size:0.62rem;color:var(--muted);margin-bottom:10px">Predicted →</div>
+                <div class="cm-wrapper">
+                    <div>
+                        <div style="display:flex;gap:6px;margin-bottom:4px">
+                            <div style="width:24px"></div>
+                            <div class="cm-axis" style="flex:1;text-align:center">Legitimate</div>
+                            <div class="cm-axis" style="flex:1;text-align:center">Phishing</div>
+                        </div>
+                        <div style="display:flex;gap:6px">
+                            <div style="display:flex;flex-direction:column;justify-content:space-around;gap:6px">
+                                <div class="cm-axis" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;height:80px">Legit</div>
+                                <div class="cm-axis" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;height:80px">Phishing</div>
                             </div>
-                            <div style="display:flex;gap:6px">
-                                <div style="display:flex;flex-direction:column;justify-content:space-around;gap:6px">
-                                    <div class="cm-axis" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;height:80px">Legit</div>
-                                    <div class="cm-axis" style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;height:80px">Phishing</div>
+                            <div class="cm-grid">
+                                <div class="cm-cell tn">
+                                    <div class="cm-val cm-val-good" id="cmTN" style="color:#5AE8B4">—</div>
+                                    <div class="cm-label">TN</div>
+                                    <div class="cm-sub">Correct Legit</div>
                                 </div>
-                                <div class="cm-grid">
-                                    <div class="cm-cell tn">
-                                        <div class="cm-val cm-val-good" id="cmTN" style="color:#5AE8B4">—</div>
-                                        <div class="cm-label">TN</div>
-                                        <div class="cm-sub">Correct Legit</div>
-                                    </div>
-                                    <div class="cm-cell fp">
-                                        <div class="cm-val cm-val-bad" id="cmFP" style="color:#F08080">—</div>
-                                        <div class="cm-label">FP</div>
-                                        <div class="cm-sub">False Alarm</div>
-                                    </div>
-                                    <div class="cm-cell fn">
-                                        <div class="cm-val cm-val-bad" id="cmFN" style="color:#F08080">—</div>
-                                        <div class="cm-label">FN</div>
-                                        <div class="cm-sub">Missed Phish</div>
-                                    </div>
-                                    <div class="cm-cell tp">
-                                        <div class="cm-val cm-val-good" id="cmTP" style="color:#5AE8B4">—</div>
-                                        <div class="cm-label">TP</div>
-                                        <div class="cm-sub">Caught Phish</div>
-                                    </div>
+                                <div class="cm-cell fp">
+                                    <div class="cm-val cm-val-bad" id="cmFP" style="color:#F08080">—</div>
+                                    <div class="cm-label">FP</div>
+                                    <div class="cm-sub">False Alarm</div>
+                                </div>
+                                <div class="cm-cell fn">
+                                    <div class="cm-val cm-val-bad" id="cmFN" style="color:#F08080">—</div>
+                                    <div class="cm-label">FN</div>
+                                    <div class="cm-sub">Missed Phish</div>
+                                </div>
+                                <div class="cm-cell tp">
+                                    <div class="cm-val cm-val-good" id="cmTP" style="color:#5AE8B4">—</div>
+                                    <div class="cm-label">TP</div>
+                                    <div class="cm-sub">Caught Phish</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="cm-legend">
-                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#0D9E74"></span><span><strong class="cm-tn-label">TN:</strong> Legit email correctly classified as legitimate</span></div>
-                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#C93030"></span><span><strong class="cm-fp-label">FP:</strong> Legit email misclassified as phishing (false alarm)</span></div>
-                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#C93030"></span><span><strong class="cm-fp-label">FN:</strong> Phishing email missed as legitimate (dangerous)</span></div>
-                            <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#0D9E74"></span><span><strong class="cm-tn-label">TP:</strong> Phishing email correctly caught</span></div>
-                        </div>
+                    </div>
+                    <div class="cm-legend">
+                        <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#0D9E74"></span><span><strong class="cm-tn-label">TN:</strong> Legit email correctly classified as legitimate</span></div>
+                        <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#C93030"></span><span><strong class="cm-fp-label">FP:</strong> Legit email misclassified as phishing (false alarm)</span></div>
+                        <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#C93030"></span><span><strong class="cm-fp-label">FN:</strong> Phishing email missed as legitimate (dangerous)</span></div>
+                        <div class="cm-legend-row"><span class="cm-legend-dot" style="background:#0D9E74"></span><span><strong class="cm-tn-label">TP:</strong> Phishing email correctly caught</span></div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Metric comparison bars + Threshold -->
-        <div class="main-grid">
-
-            <div class="cis-card">
-                <div class="card-header"><i class="fas fa-chart-bar"></i> Metric Comparison — All Models</div>
-                <div class="card-body">
-                    <div class="note-muted" style="font-size:0.62rem;color:var(--muted);margin-bottom:10px">AUC-ROC score per model. Higher is better. Best model highlighted.</div>
-                    <div class="hbar-list" id="hbarList"></div>
-                </div>
             </div>
 
+            <!-- Decision threshold -->
             <div class="cis-card">
                 <div class="card-header"><i class="fas fa-scale-balanced"></i> Decision Threshold</div>
                 <div class="card-body">
-                    <div class="thresh-wrap">
-                        <div class="thresh-slider-area">
-                            <div class="thresh-desc note-muted" style="font-size:0.68rem;color:var(--muted2);margin-bottom:4px;line-height:1.5">The production threshold is set to <strong class="thresh-strong" id="threshDisplay">0.60</strong>. A higher threshold reduces false positives (legitimate emails wrongly flagged) at the cost of potentially missing some phishing emails.</div>
-                            <div class="thresh-track">
-                                <div class="thresh-marker" id="threshMarker"></div>
-                            </div>
-                            <div class="thresh-labels">
-                                <span>0.0</span><span>0.2</span><span>0.4</span><span>0.6</span><span>0.8</span><span>1.0</span>
-                            </div>
+                <div class="thresh-wrap">
+                    <div class="thresh-slider-area">
+                        <div class="thresh-desc note-muted" style="font-size:0.68rem;color:var(--muted2);margin-bottom:4px;line-height:1.5">The production threshold is set to <strong class="thresh-strong" id="threshDisplay">0.60</strong>. A higher threshold reduces false positives (legitimate emails wrongly flagged) at the cost of potentially missing some phishing emails.</div>
+                        <div class="thresh-track">
+                            <div class="thresh-marker" id="threshMarker"></div>
                         </div>
-                        <div class="thresh-info">
-                            <div class="thresh-info-item">
-                                <div class="thresh-info-label">Current Threshold</div>
-                                <div class="thresh-info-val" id="tiThresh">0.60</div>
-                            </div>
-                            <div class="thresh-info-item">
-                                <div class="thresh-info-label">Trusted Domain Reduction</div>
-                                <div class="thresh-info-val">−0.18</div>
-                            </div>
-                            <div class="thresh-info-item">
-                                <div class="thresh-info-label">Selection Criterion</div>
-                                <div class="thresh-info-val" style="font-size:0.75rem">F1 @ threshold</div>
-                            </div>
-                            <div class="thresh-info-item">
-                                <div class="thresh-info-label">Models Evaluated</div>
-                                <div class="thresh-info-val" id="tiModels">—</div>
-                            </div>
+                        <div class="thresh-labels">
+                            <span>0.0</span><span>0.2</span><span>0.4</span><span>0.6</span><span>0.8</span><span>1.0</span>
                         </div>
                     </div>
+                    <div class="thresh-info">
+                        <div class="thresh-info-item">
+                            <div class="thresh-info-label">Current Threshold</div>
+                            <div class="thresh-info-val" id="tiThresh">0.60</div>
+                        </div>
+                        <div class="thresh-info-item">
+                            <div class="thresh-info-label">Trusted Domain Reduction</div>
+                            <div class="thresh-info-val">−0.18</div>
+                        </div>
+                        <div class="thresh-info-item">
+                            <div class="thresh-info-label">Selection Criterion</div>
+                            <div class="thresh-info-val" style="font-size:0.75rem">F1 @ threshold</div>
+                        </div>
+                        <div class="thresh-info-item">
+                            <div class="thresh-info-label">Active Models</div>
+                            <div class="thresh-info-val" id="tiModels">1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
 
-                    <!-- Algorithm descriptions -->
-                    <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
-                        <div class="algo-section-label">Evaluated Classifiers</div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="algoGrid"></div>
+        <!-- Detection Pipeline -->
+        <div class="cis-card" style="margin-bottom:12px">
+            <div class="card-header"><i class="fas fa-diagram-project"></i> Detection Pipeline</div>
+            <div class="card-body">
+                <div class="pipe-row">
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#60A5FA"><i class="fas fa-envelope-open"></i></div>
+                        <div class="pipe-step-label">Email In</div>
+                        <div class="pipe-step-sub">SMTP · IMAP · Manual</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#A78BFA"><i class="fas fa-broom"></i></div>
+                        <div class="pipe-step-label">Preprocess</div>
+                        <div class="pipe-step-sub">HTML strip</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#34D399"><i class="fas fa-microscope"></i></div>
+                        <div class="pipe-step-label">Feature Extract</div>
+                        <div class="pipe-step-sub">URLs · Domain</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#FBBF24"><i class="fas fa-brain"></i></div>
+                        <div class="pipe-step-label">ML Model</div>
+                        <div class="pipe-step-sub" id="pipeModelName">Best Classifier</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#F87171"><i class="fas fa-code-branch"></i></div>
+                        <div class="pipe-step-label">Rule Engine</div>
+                        <div class="pipe-step-sub">Domain · IP · TLD</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#E879F9"><i class="fas fa-scale-balanced"></i></div>
+                        <div class="pipe-step-label">Threshold</div>
+                        <div class="pipe-step-sub">0.60 Anti-FP</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#38BDF8"><i class="fas fa-database"></i></div>
+                        <div class="pipe-step-label">Log &amp; Store</div>
+                        <div class="pipe-step-sub">PostgreSQL</div>
+                    </div>
+                    <div class="pipe-arrow">→</div>
+                    <div class="pipe-step">
+                        <div class="pipe-step-icon" style="color:#10B981"><i class="fas fa-bell"></i></div>
+                        <div class="pipe-step-label">Alert Feed</div>
+                        <div class="pipe-step-sub">Real-time</div>
                     </div>
                 </div>
             </div>
@@ -492,11 +525,7 @@
     }
 
     const ALGO_DESCS = {
-        'Logistic Regression':   { icon: 'fa-chart-line',    color: '#60A5FA', desc: 'Linear model. Fast, interpretable. Good baseline.' },
-        'Random Forest':         { icon: 'fa-tree',          color: '#5AE8B4', desc: '150 trees, max_depth 12. Handles non-linearity well.' },
-        'Extra Trees':           { icon: 'fa-leaf',          color: '#F0AA32', desc: 'Randomised splits — faster than RF, comparable accuracy.' },
-        'Gradient Boosting':     { icon: 'fa-rocket',        color: '#F08080', desc: '200 estimators, lr=0.08. Sequential error correction.' },
-        'XGBoost':               { icon: 'fa-bolt',          color: '#A78BFA', desc: 'Regularised boosting. Often best on tabular data.' },
+        'Logistic Regression': { icon: 'fa-chart-line', color: '#60A5FA', desc: 'Single production classifier. Linear, fast, and stable for tabular + hashed text features.' },
     };
 
     // ── Load model info ──────────────────────────────────────────────────────
@@ -504,12 +533,11 @@
         let info = {};
         try { info = await fetch('/api/model-info').then(r => r.json()); } catch(e) {}
 
-        const bestName   = info.model_name || 'Unknown';
+        const bestName   = info.model_name || 'Logistic Regression';
         const threshold  = info.threshold  || 0.60;
         const auc        = info.auc;
         const f1         = info.f1;
-        const results    = info.results_all || {};
-        const bestResult = results[bestName] || {};
+        const bestResult = (info.results_all && info.results_all[bestName]) ? info.results_all[bestName] : {};
 
         // Stats
         document.getElementById('statModelName').textContent  = bestName;
@@ -518,7 +546,7 @@
         document.getElementById('statThreshold').textContent  = threshold;
         document.getElementById('threshDisplay').textContent  = threshold;
         document.getElementById('tiThresh').textContent       = threshold;
-        document.getElementById('tiModels').textContent       = Object.keys(results).length || '—';
+        document.getElementById('tiModels').textContent       = '1';
 
         // Threshold marker
         const marker = document.getElementById('threshMarker');
@@ -546,68 +574,8 @@
         document.getElementById('cmFN').textContent = bestResult[fnKey] !== undefined ? bestResult[fnKey].toLocaleString() : '—';
         document.getElementById('cmTP').textContent = bestResult.tp !== undefined ? bestResult.tp.toLocaleString() : '—';
 
-        // Model table
-        const tbody = document.getElementById('modelTableBody');
-        const modelNames = Object.keys(results);
-        if (!modelNames.length) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No model data available</td></tr>';
-        } else {
-            tbody.innerHTML = modelNames.map(name => {
-                const r = results[name];
-                const isBest = name === bestName;
-                const fpV = r[fpKey] !== undefined ? r[fpKey] : '—';
-                const fnV = r[fnKey] !== undefined ? r[fnKey] : '—';
-                const f1V = r[thKey] !== undefined ? r[thKey] : r['f1'] || '—';
-                const aucW = r.auc ? Math.round(parseFloat(r.auc) * 100) : 0;
-                return `<tr${isBest ? ' class="best-row"' : ''}>
-                    <td><span class="model-name">${name}${isBest ? '<span class="best-badge"><i class="fas fa-star"></i> Best</span>' : ''}</span></td>
-                    <td><span class="metric-val ${metricColor(r.auc)}">${fmt(r.auc)}</span>
-                        <span class="metric-bar-wrap"><span class="metric-bar-fill" data-w="${aucW}" style="width:0%;background:${isBest ? '#0D9E74' : '#2E7DD3'}"></span></span></td>
-                    <td><span class="metric-val ${metricColor(r.precision)}">${fmt(r.precision)}</span></td>
-                    <td><span class="metric-val ${metricColor(r.recall)}">${fmt(r.recall)}</span></td>
-                    <td><span class="metric-val ${metricColor(f1V)}">${fmt(f1V)}</span></td>
-                    <td><span class="metric-val ${metricColor(fpV, true)}">${fpV}</span></td>
-                    <td><span class="metric-val ${metricColor(fnV, true)}">${fnV}</span></td>
-                </tr>`;
-            }).join('');
-            setTimeout(() => {
-                tbody.querySelectorAll('.metric-bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
-            }, 120);
-        }
+        // Removed Production Model Metrics and AUC Snapshot blocks per UI simplification.
 
-        // HBar comparison
-        const hbarList = document.getElementById('hbarList');
-        const maxAUC = Math.max(...modelNames.map(n => parseFloat(results[n].auc || 0)), 0.01);
-        hbarList.innerHTML = modelNames.map(name => {
-            const r = results[name];
-            const aucVal = parseFloat(r.auc || 0);
-            const pct = Math.round((aucVal / maxAUC) * 100);
-            const isBest = name === bestName;
-            const color = isBest ? 'linear-gradient(90deg,#0D9E74,#5AE8B4)' : 'linear-gradient(90deg,#2E7DD3,#60A5FA)';
-            return `<div class="hbar-row">
-                <div class="hbar-header">
-                    <span class="hbar-name">${name}${isBest ? ' ★' : ''}</span>
-                    <span class="hbar-val">${fmt(r.auc)}</span>
-                </div>
-                <div class="hbar-track"><div class="hbar-fill" data-pct="${pct}" style="width:0%;background:${color}"></div></div>
-            </div>`;
-        }).join('');
-        setTimeout(() => {
-            hbarList.querySelectorAll('.hbar-fill').forEach((b, i) => {
-                setTimeout(() => { b.style.width = b.dataset.pct + '%'; }, i * 60);
-            });
-        }, 150);
-
-        // Algorithm grid
-        const algoGrid = document.getElementById('algoGrid');
-        modelNames.forEach(name => {
-            const cfg = ALGO_DESCS[name] || { icon: 'fa-robot', color: '#8299B5', desc: 'Classifier.' };
-            const div = document.createElement('div');
-            div.className = 'algo-card' + (name === bestName ? ' best' : '');
-            div.innerHTML = `<div class="algo-card-title" style="color:${cfg.color}"><i class="fas ${cfg.icon}" style="margin-right:5px"></i>${name}</div>
-                <div class="algo-card-desc">${cfg.desc}</div>`;
-            algoGrid.appendChild(div);
-        });
     }
 
     async function initLocalServerStatus() {

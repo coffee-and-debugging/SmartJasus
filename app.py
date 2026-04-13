@@ -22,14 +22,18 @@ from email.parser import BytesParser
 from email.utils import parseaddr, parsedate_to_datetime
 
 import joblib
-import numpy as np
 import pandas as pd
 import tldextract
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, send_from_directory
 from flask_cors import CORS
 
+from config import LABEL_MAP, LEGITIMATE_DOMAINS, MODEL_PATH, SUSPICIOUS_TLDS
+from features import extract_email_features
 from local_mail_server import MailStore, LocalMailHandler, LocalSMTPServer
+from preprocessing import discover_csv_files
+from rules import apply_rules
+from train import train as train_model
 
 load_dotenv()
 
@@ -56,7 +60,6 @@ AUTO_SYNC_ON_START = os.getenv("AUTO_SYNC_ON_START", "false").lower() == "true"
 APP_HOST = os.getenv("APP_HOST", "0.0.0.0").strip()
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "").strip()
-HIBP_PASSWORDS_API_URL = os.getenv("HIBP_PASSWORDS_API_URL", "https://api.pwnedpasswords.com/range").strip().rstrip("/")
 PHISHING_THRESHOLD = float(os.getenv("PHISHING_THRESHOLD", "0.60"))
 TRUSTED_DOMAIN_REDUCTION = float(os.getenv("TRUSTED_DOMAIN_REDUCTION", "0.18"))
 
@@ -66,35 +69,12 @@ DB_NAME = os.getenv("DB_NAME", "emailserver")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
-# ── Load reference data from datasets/ ─────────────────────────────────────────
-_BASE = os.path.dirname(os.path.abspath(__file__))
+# ── Paths ──────────────────────────────────────────────────────────────────────
+_BASE    = os.path.dirname(os.path.abspath(__file__))
 _DATASET = os.path.join(_BASE, "dataset")
 
-
-def _load_json_set(filename: str, key: str) -> set:
-    path = os.path.join(_DATASET, filename)
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            return set(json.load(f).get(key, []))
-    return set()
-
-
-LEGITIMATE_DOMAINS: set = _load_json_set("legitimate_domains.json", "domains")
-SUSPICIOUS_TLDS: set = _load_json_set("suspicious_tlds.json", "tlds")
-URL_SHORTENERS: set = _load_json_set("url_shorteners.json", "shorteners")
-
-_SYNTHETIC_CSV_RE = re.compile(r"^dataset\d+\.csv$", re.IGNORECASE)
-
-
-def _discover_realworld_dataset_csvs() -> list[str]:
-    """Return real dataset CSV names, skipping synthetic datasetN.csv files."""
-    try:
-        return sorted(
-            f for f in os.listdir(_DATASET)
-            if f.lower().endswith(".csv") and not _SYNTHETIC_CSV_RE.match(f)
-        )
-    except Exception:
-        return []
+# Ensure local domain is always trusted
+LEGITIMATE_DOMAINS.add(LOCAL_DOMAIN)
 
 
 def _count_csv_rows(path: str) -> int:
@@ -106,27 +86,19 @@ def _count_csv_rows(path: str) -> int:
         return 0
 
 
-_LABEL_MAP = {
-    "1": 1, "phishing": 1, "spam": 1, "malicious": 1,
-    "0": 0, "legitimate": 0, "ham": 0, "safe": 0, "benign": 0,
-}
-
-
 def _count_csv_label_split(path: str) -> dict:
     """Return {'rows': N, 'phish': N, 'legit': N} by reading only the label column."""
     try:
         import csv
-        csv.field_size_limit(10 ** 7)  # some email bodies exceed the 128 KB default
+        csv.field_size_limit(10 ** 7)
         phish = legit = 0
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.reader(f)
             raw_header = next(reader, None)
             if raw_header is None:
                 return {"rows": 0, "phish": 0, "legit": 0}
-            # normalise header names exactly as train.py does
             header = [c.strip().strip('"').strip("'").lower() for c in raw_header]
             if "label" not in header:
-                # no label column — count lines only
                 rows = sum(1 for _ in reader)
                 return {"rows": rows, "phish": 0, "legit": rows}
             label_idx = header.index("label")
@@ -134,7 +106,7 @@ def _count_csv_label_split(path: str) -> dict:
                 if len(row) <= label_idx:
                     continue
                 raw = row[label_idx].strip().strip('"').strip("'").lower()
-                lbl = _LABEL_MAP.get(raw)
+                lbl = LABEL_MAP.get(raw)
                 if lbl == 1:
                     phish += 1
                 elif lbl == 0:
@@ -143,18 +115,6 @@ def _count_csv_label_split(path: str) -> dict:
     except Exception:
         rows = _count_csv_rows(path)
         return {"rows": rows, "phish": 0, "legit": rows}
-
-# Ensure local domain is always trusted
-LEGITIMATE_DOMAINS.add(LOCAL_DOMAIN)
-
-URGENT_PHRASES = [
-    "urgent", "immediate", "action required", "verify now",
-    "security alert", "account suspended", "password expired",
-    "click here", "limited time", "offer expires", "verify account",
-    "confirm identity", "unusual activity", "unauthorized access",
-    "your account", "win a prize", "congratulations you", "claim now",
-    "update your", "log in now", "sign in now", "confirm your",
-]
 
 # ── Database & services ────────────────────────────────────────────────────────
 mail_store = MailStore(
@@ -172,18 +132,13 @@ _model_meta = {}
 
 def load_model() -> None:
     global _model_pipeline, _model_meta
-    model_path = os.path.join(_BASE, "models", "phishing_detection.pkl")
 
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(
-            f"[CatchFish] No trained model found at {model_path}. "
-            "Run train.py (or the Colab notebook) to generate it, "
-            "then place the resulting phishing_detection.pkl in models/."
-        )
+    if not os.path.exists(MODEL_PATH):
+        print(f"[CatchFish] Model not found at {MODEL_PATH}. Training a new model …")
+        train_model(threshold=PHISHING_THRESHOLD)
 
-    payload = joblib.load(model_path)
+    payload = joblib.load(MODEL_PATH)
 
-    # Support both old format (Pipeline) and new format (dict with pipeline+meta)
     if isinstance(payload, dict) and "pipeline" in payload:
         _model_pipeline = payload["pipeline"]
         _model_meta = payload.get("meta", {})
@@ -191,143 +146,16 @@ def load_model() -> None:
         _model_pipeline = payload  # legacy plain pipeline
         _model_meta = {"model_name": "legacy", "threshold": PHISHING_THRESHOLD}
 
-    print(f"[CatchFish] Model loaded: {_model_meta.get('model_name','unknown')}  "
-          f"AUC={_model_meta.get('auc','—')}  threshold={PHISHING_THRESHOLD}")
+    print(f"[CatchFish] Model loaded: {_model_meta.get('model_name', 'unknown')}  "
+          f"AUC={_model_meta.get('auc', '—')}  threshold={PHISHING_THRESHOLD}")
 
 
 load_model()
 
 
-# ── Feature extraction ─────────────────────────────────────────────────────────
-
-def analyze_urls(text: str) -> dict:
-    text_lower = str(text).lower()
-    all_urls = re.findall(r"https?://[^\s<>\"']+|www\.[^\s<>\"']+", text_lower)
-
-    ip_urls = [u for u in all_urls if re.search(r"https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", u)]
-    shortener_urls = [u for u in all_urls if any(s in u for s in URL_SHORTENERS)]
-    https_urls = [u for u in all_urls if u.startswith("https://")]
-    http_urls = [u for u in all_urls if u.startswith("http://")]
-
-    url_domains = []
-    for url in all_urls:
-        m = re.search(r"https?://([^/\s]+)", url)
-        if m:
-            url_domains.append(m.group(1))
-
-    return {
-        "total_urls": len(all_urls),
-        "ip_url_count": len(ip_urls),
-        "shortener_url_count": len(shortener_urls),
-        "https_url_count": len(https_urls),
-        "http_url_count": len(http_urls),
-        "http_ratio": len(http_urls) / (len(all_urls) + 1),
-        "url_domains": url_domains,
-        "raw_urls": all_urls[:10],
-        "ip_urls": ip_urls[:5],
-    }
-
-
-def extract_features_from_email(
-    email_text, subject="", has_attachment=None,
-    links_count=None, sender_domain=None, urgent_keywords=None,
-) -> tuple:
-    """Return (features_dict, url_analysis_dict). Matches train.py schema exactly."""
-    email_text = str(email_text) if email_text else ""
-    subject = str(subject) if subject else ""
-    sender_domain = str(sender_domain).lower().strip() if sender_domain else ""
-
-    url_analysis = analyze_urls(email_text)
-
-    links_count = int(links_count) if links_count is not None else url_analysis["total_urls"]
-    has_attachment = int(has_attachment) if has_attachment is not None else 0
-
-    if urgent_keywords is None:
-        urgent_keywords = int(any(phrase in email_text.lower() for phrase in URGENT_PHRASES))
-    else:
-        urgent_keywords = int(urgent_keywords)
-
-    # Match exact domain OR any subdomain (e.g. accounts.google.com → google.com)
-    legitimate_domain = 1 if (
-        sender_domain in LEGITIMATE_DOMAINS or
-        any(sender_domain.endswith("." + d) for d in LEGITIMATE_DOMAINS)
-    ) else 0
-    suspicious_tld = 1 if any(sender_domain.endswith(t) for t in SUSPICIOUS_TLDS) else 0
-    domain_has_digits = int(any(c.isdigit() for c in sender_domain))
-    domain_has_hyphen = int("-" in sender_domain)
-    domain_length = len(sender_domain)
-    domain_age = 30 if sender_domain in LEGITIMATE_DOMAINS else max(1, abs(hash(sender_domain)) % 8 + 1)
-
-    email_length = len(email_text)
-    subject_length = len(subject)
-    link_density = links_count / (email_length + 1)
-    special_chars = len(re.findall(r"[!$%^&*()_+|~=`{}\[\]:\"\'<>?,./]", email_text))
-    html_tags = len(re.findall(r"<[^>]+>", email_text.lower()))
-
-    features = {
-        "email_text": email_text,
-        "subject": subject,
-        "sender_domain": sender_domain,
-        "has_attachment": has_attachment,
-        "links_count": links_count,
-        "urgent_keywords": urgent_keywords,
-        "email_length": email_length,
-        "subject_length": subject_length,
-        "link_density": link_density,
-        "domain_age": domain_age,
-        "special_chars": special_chars,
-        "html_tags": html_tags,
-        "legitimate_domain": legitimate_domain,
-        "suspicious_tld": suspicious_tld,
-        "ip_url_count": url_analysis["ip_url_count"],
-        "shortener_url_count": url_analysis["shortener_url_count"],
-        "https_url_count": url_analysis["https_url_count"],
-        "http_url_count": url_analysis["http_url_count"],
-        "http_ratio": url_analysis["http_ratio"],
-        "domain_length": domain_length,
-        "domain_has_digits": domain_has_digits,
-        "domain_has_hyphen": domain_has_hyphen,
-    }
-    return features, url_analysis
-
-
-def apply_rule_adjustments(raw_probability: float, features: dict) -> tuple:
-    """Hybrid rule engine. Returns (adjusted_probability, rules_list)."""
-    prob = raw_probability
-    rules = []
-    domain = features.get("sender_domain", "")
-
-    if features.get("legitimate_domain", 0) == 1 and domain:
-        old = prob
-        prob = max(0.05, prob - TRUSTED_DOMAIN_REDUCTION)
-        rules.append(f"Trusted domain '{domain}': -{TRUSTED_DOMAIN_REDUCTION:.2f} ({old:.3f}→{prob:.3f})")
-
-    if features.get("ip_url_count", 0) > 0:
-        old = prob
-        prob = min(0.99, prob + 0.20)
-        rules.append(f"IP-based URL detected: +0.20 ({old:.3f}→{prob:.3f})")
-
-    if features.get("suspicious_tld", 0) == 1:
-        old = prob
-        prob = min(0.99, prob + 0.12)
-        rules.append(f"Suspicious TLD: +0.12 ({old:.3f}→{prob:.3f})")
-
-    if features.get("shortener_url_count", 0) > 0:
-        old = prob
-        prob = min(0.99, prob + 0.10)
-        rules.append(f"URL shortener detected: +0.10 ({old:.3f}→{prob:.3f})")
-
-    if features.get("domain_has_digits", 0) == 1 and features.get("legitimate_domain", 0) == 0:
-        old = prob
-        prob = min(0.99, prob + 0.06)
-        rules.append(f"Digits in sender domain: +0.06 ({old:.3f}→{prob:.3f})")
-
-    return prob, rules
-
-
 def predict_from_payload(data: dict) -> dict:
     """Full pipeline: features → ML → rules → verdict. Stores all details."""
-    features, url_analysis = extract_features_from_email(
+    features, url_analysis = extract_email_features(
         email_text=data.get("email_text", ""),
         subject=data.get("subject", ""),
         has_attachment=data.get("has_attachment"),
@@ -340,7 +168,11 @@ def predict_from_payload(data: dict) -> dict:
     raw_proba_arr = _model_pipeline.predict_proba(input_df)
     raw_probability = float(raw_proba_arr[0][1])
 
-    adjusted_probability, rules_applied = apply_rule_adjustments(raw_probability, features)
+    adjusted_probability, rules_applied = apply_rules(
+        raw_probability,
+        features,
+        trusted_domain_reduction=TRUSTED_DOMAIN_REDUCTION,
+    )
     prediction = "phishing" if adjusted_probability >= PHISHING_THRESHOLD else "legitimate"
     confidence = adjusted_probability if prediction == "phishing" else (1.0 - adjusted_probability)
 
@@ -538,12 +370,6 @@ def virustotal_file_scanner():
 def domain_intelligence_page():
     return render_template("domain_intelligence.html")
 
-
-@app.route("/password-breach-checker")
-def password_breach_checker_page():
-    return render_template("password_breach_checker.html")
-
-
 @app.route("/dataset")
 def dataset_page():
     return render_template("dataset.html")
@@ -552,6 +378,11 @@ def dataset_page():
 @app.route("/feature-extraction")
 def feature_extraction_page():
     return render_template("feature_extraction.html")
+
+
+@app.route("/post-ml")
+def post_ml_page():
+    return render_template("post_ml.html")
 
 
 @app.route("/model")
@@ -770,7 +601,7 @@ def model_info():
     sklearn version), fall back to counting rows directly from the CSV files
     so the Dataset page always shows real numbers.
     """
-    datasets_used = _model_meta.get("datasets_used") or _discover_realworld_dataset_csvs()
+    datasets_used = _model_meta.get("datasets_used") or discover_csv_files()
 
     # Use stored per_dataset counts when available; otherwise compute from CSVs.
     per_dataset = _model_meta.get("per_dataset") or {}
@@ -792,7 +623,7 @@ def model_info():
 
     return jsonify({
         "model_name":      _model_meta.get("model_name", "unknown"),
-        "threshold":       _model_meta.get("threshold", PHISHING_THRESHOLD),
+        "threshold":       PHISHING_THRESHOLD,
         "auc":             _model_meta.get("auc"),
         "f1":              _model_meta.get("f1"),
         "results_all":     _model_meta.get("results_all", {}),
@@ -898,76 +729,6 @@ def domain_reputation():
             result["virustotal"] = {"error": str(vt_err)}
 
     return jsonify(result)
-
-
-@app.route("/api/password-breach-check", methods=["POST"])
-def password_breach_check():
-    """
-    Check password exposure using Have I Been Pwned Pwned Passwords API (k-anonymity).
-    Only the first 5 chars of SHA-1 are sent to the remote API.
-    """
-    data = request.get_json() or {}
-    password = data.get("password", "")
-    if not isinstance(password, str) or not password:
-        return jsonify({"error": "password is required"}), 400
-
-    try:
-        import hashlib
-        import requests as req_lib
-
-        sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
-        prefix, suffix = sha1[:5], sha1[5:]
-
-        hibp_headers = {
-            "Add-Padding": "true",
-            "User-Agent": "CatchFish/1.0",
-        }
-
-        resp = req_lib.get(
-            f"{HIBP_PASSWORDS_API_URL}/{prefix}",
-            headers=hibp_headers,
-            timeout=20,
-        )
-        if resp.status_code != 200:
-            return jsonify({"error": f"HIBP API returned HTTP {resp.status_code}"}), 502
-
-        breach_count = 0
-        for line in resp.text.splitlines():
-            if ":" not in line:
-                continue
-            hash_suffix, count = line.split(":", 1)
-            if hash_suffix.strip().upper() == suffix:
-                try:
-                    breach_count = int(count.strip())
-                except ValueError:
-                    breach_count = 0
-                break
-
-        breached = breach_count > 0
-        if not breached:
-            severity = "safe"
-            message = "No breach record found for this password in HIBP dataset."
-            recommendation = "Continue using strong unique passwords and MFA."
-        elif breach_count < 100:
-            severity = "medium"
-            message = "Password was found in breach datasets."
-            recommendation = "Change password now and avoid reuse across services."
-        else:
-            severity = "high"
-            message = "Password was exposed many times in known breaches."
-            recommendation = "Immediately change password and rotate any reused credentials."
-
-        return jsonify({
-            "breached": breached,
-            "breach_count": breach_count,
-            "severity": severity,
-            "message": message,
-            "recommendation": recommendation,
-            "source": "Have I Been Pwned - Pwned Passwords",
-        })
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
-
 
 # ── File Scan (VirusTotal) ─────────────────────────────────────────────────────
 
