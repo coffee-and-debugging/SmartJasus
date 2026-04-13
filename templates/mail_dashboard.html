@@ -192,8 +192,8 @@
         .inbox-card { display: flex; flex-direction: column; }
         .inbox-card .card-body { display: flex; flex-direction: column; overflow: hidden; }
         #inboxView  { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-        #mailList   { flex: 1; overflow-y: auto; max-height: none; }
-        #logsList   { flex: 1; overflow-y: auto; max-height: none; }
+        #mailList   { flex: 1; min-height: 0; overflow-y: auto; max-height: none; }
+        #logsList   { flex: 1; min-height: 0; overflow-y: auto; max-height: none; }
         .bottom-grid{ display: grid; grid-template-columns: 1fr 1.7fr; gap: 12px; margin-bottom: 12px; }
         @media (max-width: 1100px) {
             .cis-grid, .bottom-grid { grid-template-columns: 1fr; }
@@ -338,7 +338,7 @@
         .search-meta { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--muted); margin-top: 4px; }
         .search-count { color: #93C5FD; font-family: var(--mono); font-weight: 600; }
 
-        .threat-feed { max-height: 450px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .threat-feed { min-height: 0; max-height: 450px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
 
         .mail-item {
             background: var(--surface2); border: 1px solid var(--border);

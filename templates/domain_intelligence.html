@@ -72,8 +72,11 @@
         .input-group label { display: block; font-size: 0.57rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 3px; }
         .input-group input { width: 100%; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 4px; padding: 8px 11px; color: #C8D8EC; font-family: 'Inter', sans-serif; font-size: 0.83rem; }
         .input-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(46,125,211,0.14); }
+        .domain-check-row { display: flex; align-items: end; gap: 10px; margin-bottom: 10px; }
+        .domain-check-row .input-group { flex: 1; margin-bottom: 0 !important; }
         .btn-primary { background: #17406E; border: 1px solid #2E7DD3; border-radius: 4px; width: 100%; padding: 9px 14px; font-weight: 600; color: #93C5FD; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 0.82rem; }
         .btn-primary:hover { background: #1C4F8A; border-color: #4A9AE0; }
+        .domain-check-row .btn-primary { width: auto; min-width: 210px; white-space: nowrap; }
         .domain-result { margin-top: 9px; padding: 10px 12px; border-radius: 4px; font-size: 0.74rem; display: none; }
         .domain-result.show { display: block; }
         .domain-result.low { background: rgba(13,158,116,0.06); border: 1px solid rgba(13,158,116,0.24); }
@@ -97,6 +100,10 @@
             .stats-row { grid-template-columns: repeat(2, 1fr); }
             .result-grid { grid-template-columns: repeat(2, 1fr); }
             .cis-sidebar { width: 190px; }
+        }
+        @media (max-width: 720px) {
+            .domain-check-row { flex-direction: column; align-items: stretch; }
+            .domain-check-row .btn-primary { width: 100%; min-width: 0; }
         }
         body.light-mode { background: #EEF2F8; color: #1A2535; }
         body.light-mode .cis-sidebar, body.light-mode .top-navbar { background: #FFFFFF; border-color: #CCDAE8; }
@@ -170,13 +177,15 @@
         <div class="cis-card" style="margin-bottom:12px;">
             <div class="card-header"><i class="fas fa-search"></i> Domain Reputation Check</div>
             <div class="card-body">
-                <div class="input-group" style="margin-bottom:10px;">
-                    <label>Domain or Email Address</label>
-                    <input type="text" id="domainInput" placeholder="example.com or user@example.com">
+                <div class="domain-check-row">
+                    <div class="input-group" style="margin-bottom:10px;">
+                        <label>Domain or Email Address</label>
+                        <input type="text" id="domainInput" placeholder="example.com or user@example.com">
+                    </div>
+                    <button class="btn-primary" onclick="runDomainCheck()">
+                        <i class="fas fa-radar"></i> Analyze Domain Risk
+                    </button>
                 </div>
-                <button class="btn-primary" onclick="runDomainCheck()">
-                    <i class="fas fa-radar"></i> Analyze Domain Risk
-                </button>
                 <div id="domainResult" class="domain-result"><div id="domainResultContent"></div></div>
                 <div id="resultMetrics" class="result-grid" style="display:none;">
                     <div class="metric-chip"><div class="metric-label">Risk Score</div><div class="metric-value" id="mScore">0</div></div>
