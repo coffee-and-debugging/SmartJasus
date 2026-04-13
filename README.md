@@ -2,7 +2,7 @@
 
 CatchFish is an end-to-end phishing detection system that combines machine learning, email ingestion, and security dashboards in one Flask application.
 
-It is trained on **real-world email datasets** (CEAS_08, Enron, Ling, Nazario, Nigerian Fraud, SpamAssasin) — over 80,000 authentic emails.
+It is trained on the real-world CSV datasets currently present in `dataset/` (Enron, Ling, Nazario, Nigerian_Fraud, SpamAssasin).
 
 Usage modes:
 
@@ -35,7 +35,7 @@ Core outcomes:
 2. ML training pipeline
    File: train.py
    Responsibilities:
-   - read and merge all 6 dataset CSVs from dataset/
+   - read and merge all discovered real-world dataset CSVs from dataset/
    - clean and derive required features
    - engineer additional features
    - train a scikit-learn Logistic Regression pipeline
@@ -71,12 +71,11 @@ Core outcomes:
    - models/phishing_detection.pkl
 
 3. Real-world training data
-   - dataset/CEAS_08.csv       (39,154 rows — spam/ham benchmark)
-   - dataset/Enron.csv         (29,767 rows — real corporate email)
-   - dataset/Ling.csv          (2,859 rows  — legitimate corpus)
-   - dataset/Nazario.csv       (1,565 rows  — real phishing samples)
-   - dataset/Nigerian_Fraud.csv(3,332 rows  — advance-fee fraud)
-   - dataset/SpamAssasin.csv   (5,809 rows  — SpamAssasin benchmark)
+   - dataset/Enron.csv
+   - dataset/Ling.csv
+   - dataset/Nazario.csv
+   - dataset/Nigerian_Fraud.csv
+   - dataset/SpamAssasin.csv
 
 4. Reference data (dataset/)
    - legitimate_domains.json
@@ -130,18 +129,15 @@ CatchFish ingests mail-like content through four paths:
 
 ### 4.1 Real-world dataset pipeline
 
-train.py loads and merges 6 real-world CSV files from dataset/:
+train.py loads and merges all discovered real-world CSV files from dataset/:
 
-| File              | Rows   | Source                      |
-|-------------------|--------|-----------------------------|
-| CEAS_08.csv       | 39,154 | Spam/ham academic benchmark |
-| Enron.csv         | 29,767 | Real corporate email corpus |
-| Ling.csv          | 2,859  | Legitimate email corpus     |
-| Nazario.csv       | 1,565  | Real phishing samples       |
-| Nigerian_Fraud.csv| 3,332  | Advance-fee fraud emails    |
-| SpamAssasin.csv   | 5,809  | SpamAssasin benchmark       |
-
-After deduplication: ~75,000+ unique real emails.
+| File               | Source                      |
+|--------------------|-----------------------------|
+| Enron.csv          | Real corporate email corpus |
+| Ling.csv           | Legitimate email corpus     |
+| Nazario.csv        | Real phishing samples       |
+| Nigerian_Fraud.csv | Advance-fee fraud emails    |
+| SpamAssasin.csv    | SpamAssasin benchmark       |
 
 ### 4.2 Feature derivation from raw dataset data
 
@@ -253,13 +249,13 @@ To retrain the model locally (e.g. after sklearn upgrade or adding new data):
 python train.py
 
 This will:
-1. Load and merge all 6 CSVs from dataset/
+1. Load and merge all discovered CSVs from dataset/
 2. Train the Logistic Regression pipeline
 3. Save it to models/phishing_detection.pkl
 
 To retrain on Google Colab (recommended for slow machines):
 - Upload dataset/ folder to Google Drive
-- Open CatchFish_RealWorld_Colab.ipynb in Colab
+- Open CatchFish.ipynb in Colab
 - Set DATASET_PATH and run all cells
 - Download the generated .pkl and place in models/
 
@@ -340,8 +336,15 @@ Table: emails
 ### 8.1 UI routes
 
 1. GET /
-2. GET /mail-dashboard
-3. GET /web-icon.png
+2. GET /alerts
+3. GET /dataset
+4. GET /feature-extraction
+5. GET /post-ml
+6. GET /model
+7. GET /domain-intelligence
+8. GET /virustotal-file-scanner
+9. GET /mail-dashboard
+10. GET /web-icon.png
 
 ### 8.2 Prediction routes
 
@@ -363,15 +366,15 @@ Table: emails
 10. GET /api/stats
 11. GET /api/model-info
 12. POST /api/domain-reputation
-13. POST /api/persist-records
-14. POST /api/users/add
-15. GET /api/users
+13. POST /api/scan-file
+14. POST /api/persist-records
+15. POST /api/users/add
+16. GET /api/users
 
 ## 9. Repository Structure
 
 ```
 dataset/
-  CEAS_08.csv                   Real-world spam/ham benchmark
   Enron.csv                     Real corporate email corpus
   Ling.csv                      Legitimate email corpus
   Nazario.csv                   Real phishing samples
@@ -386,7 +389,14 @@ models/
 
 templates/
   index.html                    SOC monitoring dashboard
-  mail_dashboard.html           Mail compose and inbox UI
+   alerts.html                   Alert feed and triage UI
+   dataset.html                  Dataset analytics page
+   domain_intelligence.html      Domain reputation page
+   feature_extraction.html       Feature extraction page
+   mail_dashboard.html           Mail compose and inbox UI
+   model.html                    Model details page
+   post_ml.html                  Post-ML rules page
+   virustotal_file_scanner.html  File scanner page
 
 Extension/
   manifest.json                 Chrome extension manifest
@@ -396,7 +406,7 @@ Extension/
 app.py                          Flask app, endpoints, inference, IMAP sync
 train.py                        ML training pipeline on real-world data
 local_mail_server.py            PostgreSQL store, SMTP ingest logic
-CatchFish_RealWorld_Colab.ipynb  Colab training notebook
+CatchFish.ipynb                 Notebook workflow
 requirements.txt                Python dependencies
 DATABASE_SETUP.md               PostgreSQL setup guide
 .env                            Environment config (not committed)
@@ -517,7 +527,7 @@ If models/phishing_detection.pkl is missing:
 
 1. app.py will automatically call train.py to rebuild it.
 2. Or retrain manually: python train.py
-3. Or use CatchFish_RealWorld_Colab.ipynb on Google Colab and copy the .pkl here.
+3. Or use CatchFish.ipynb on Google Colab and copy the .pkl here.
 
 ### 12.3 IMAP auth failures
 
