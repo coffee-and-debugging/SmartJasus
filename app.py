@@ -603,10 +603,10 @@ def model_info():
     """
     datasets_used = _model_meta.get("datasets_used") or discover_csv_files()
 
-    # Use stored per_dataset counts when available; otherwise compute from CSVs.
-    per_dataset = _model_meta.get("per_dataset") or {}
-    if not per_dataset and datasets_used:
-        for fname in datasets_used:
+    # Use stored per_dataset counts when available; fill any missing files from CSV.
+    per_dataset = dict(_model_meta.get("per_dataset") or {})
+    for fname in datasets_used:
+        if fname not in per_dataset:
             per_dataset[fname] = _count_csv_label_split(
                 os.path.join(_DATASET, fname)
             )

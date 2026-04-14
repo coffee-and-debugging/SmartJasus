@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CatchFish | Mail Threat Console</title>
+    <link rel="icon" type="image/png" href="/web-icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>(function(){if(localStorage.getItem('sjTheme')==='light')document.documentElement.classList.add('light-mode-early');})();</script>
@@ -640,11 +641,17 @@
         <!-- Top bar -->
         <div class="top-navbar">
             <div class="page-title"><i class="fas fa-shield-virus"></i> Mail Threat Console</div>
-            <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
-                <span class="tt-pill"></span>
-                <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
-                <span class="tt-icon tt-sun"><i class="fas fa-sun"></i></span>
-            </button>
+            <div class="nav-tools">
+                <div class="server-status">
+                    <span class="status-dot" id="serverDot"></span>
+                    <span id="serverText">Checking…</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle" type="button" title="Toggle day / night mode">
+                    <span class="tt-pill"></span>
+                    <span class="tt-icon tt-moon"><i class="fas fa-moon"></i></span>
+                    <span class="tt-icon tt-sun"><i class="fas fa-sun"></i></span>
+                </button>
+            </div>
         </div>
 
         <!-- Stats -->
@@ -1306,13 +1313,16 @@ async function loadLogs() {
 // ── Server status ─────────────────────────────────────────────────────────────
 
 async function updateServerStatus() {
+    const dot  = document.getElementById('serverDot');
+    const text = document.getElementById('serverText');
     try {
         const d = await fetchJSON('/api/local-server-status');
         const up = !!d.local_server_up;
-        document.getElementById('serverDot').classList.toggle('active', up);
-        document.getElementById('serverText').textContent = up ? 'Local SMTP Up' : 'SMTP Offline';
+        if (dot)  dot.classList.toggle('active', up);
+        if (text) text.textContent = up ? 'Local SMTP Up' : 'SMTP Offline';
     } catch(e) {
-        document.getElementById('serverDot').classList.remove('active');
+        if (dot)  dot.classList.remove('active');
+        if (text) text.textContent = 'SMTP Offline';
     }
 }
 
